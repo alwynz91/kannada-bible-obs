@@ -1,0 +1,9 @@
+services:
+  - type: web
+    runtime: node
+    name: kannada-bible-obs
+    buildCommand: cd server && npm install
+    startCommand: node server/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production

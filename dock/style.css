@@ -1,0 +1,59 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+  padding: 15px;
+}
+
+.container {
+  width: 100%;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  outline: none;
+}
+
+.settings {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.settings label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+#verseList {
+  margin-top: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.verseItem {
+  background: #1e1e1e;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.verseItem:hover {
+  background: #333;
+}
