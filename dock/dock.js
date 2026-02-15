@@ -28,22 +28,26 @@ searchInput.addEventListener("keydown", (e) => {
 
 function searchChapter() {
   const input = searchInput.value.trim();
-  const parts = input.split(" ");
+  const parts = input.split(/\s+/).filter(Boolean);
 
   if (parts.length < 2) {
     verseList.innerHTML = `<p style="color:red;">Type like: Genesis 1</p>`;
     return;
   }
 
-  const book = parts[0];
+  const bookInput = parts[0];
   const chapter = parts[1];
+
+  const book = Object.keys(bibleData).find(
+    (b) => b.toLowerCase() === bookInput.toLowerCase()
+  );
 
   verseList.innerHTML = "";
 
-  const chapterData = bibleData[book]?.[chapter];
+  const chapterData = book ? bibleData[book]?.[chapter] : null;
 
   if (!chapterData) {
-    verseList.innerHTML = `<p style="color:red;">Not found: ${book} ${chapter}</p>`;
+    verseList.innerHTML = `<p style="color:red;">Not found: ${bookInput} ${chapter}</p>`;
     return;
   }
 
