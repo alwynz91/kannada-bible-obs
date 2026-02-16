@@ -49,11 +49,14 @@
         const res = await fetch("/api/state");
         const { verse = "", fontSize = "60" } = await res.json();
         const verseBox = document.getElementById("verseText");
-        verseBox.innerText = verse;
+        verseBox.innerText = verse || "Select a verse in the dock";
         verseBox.style.fontSize = fontSize + "px";
-      } catch (e) {}
+      } catch (e) {
+        document.getElementById("verseText").innerText = "Connecting...";
+      }
     }
 
+    updateVerse();
     setInterval(updateVerse, 150);
   </script>
 </body>
