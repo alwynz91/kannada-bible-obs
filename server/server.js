@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Shared state (works across different computers)
-let state = { verse: "", fontSize: "60" };
+let state = { verse: "", reference: "", fontSize: "60" };
 
 app.use(express.json());
 app.use("/dock", express.static(path.join(__dirname, "../dock")));
@@ -22,6 +22,7 @@ app.get("/api/state", (req, res) => {
 
 app.post("/api/state", (req, res) => {
   if (req.body.verse !== undefined) state.verse = req.body.verse;
+  if (req.body.reference !== undefined) state.reference = req.body.reference;
   if (req.body.fontSize !== undefined) state.fontSize = req.body.fontSize;
   res.json(state);
 });

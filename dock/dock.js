@@ -59,10 +59,11 @@ function searchChapter() {
     div.innerHTML = `<b>${verseNum}</b> - ${verseText}`;
 
     div.onclick = () => {
+      const reference = `${book} ${chapter}:${verseNum}`;
       fetch("/api/state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verse: verseText }),
+        body: JSON.stringify({ verse: verseText, reference }),
       });
     };
 

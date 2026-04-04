@@ -24,35 +24,90 @@
       box-sizing: border-box;
     }
 
-    #verseText {
-      font-size: 60px;
+    #verseCard {
       color: white;
       text-align: center;
       text-shadow: 3px 3px 12px black;
       background: rgba(0, 0, 0, 0.45);
-      padding: 20px 40px;
+      padding: 24px 44px 28px;
       border-radius: 20px;
       max-width: 95%;
       line-height: 1.4;
+    }
+
+    #labelWordOfGod {
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.92;
+      margin-bottom: 0.35em;
+    }
+
+    #referenceText {
+      font-weight: 600;
+      margin-bottom: 0.5em;
+      opacity: 0.95;
+    }
+
+    #verseBody {
+      font-weight: 400;
+    }
+
+    #verseCard.empty #labelWordOfGod,
+    #verseCard.empty #referenceText {
+      display: none;
     }
   </style>
 </head>
 
 <body>
   <div id="verseBox">
-    <div id="verseText">Loading...</div>
+    <div id="verseCard" class="empty">
+      <div id="labelWordOfGod"></div>
+      <div id="referenceText"></div>
+      <div id="verseBody">Loading...</div>
+    </div>
   </div>
 
   <script>
+    const WORD_OF_GOD_LABEL = "Word of God";
+
     async function updateVerse() {
+      const card = document.getElementById("verseCard");
+      const labelEl = document.getElementById("labelWordOfGod");
+      const refEl = document.getElementById("referenceText");
+      const bodyEl = document.getElementById("verseBody");
+
       try {
         const res = await fetch("/api/state");
-        const { verse = "", fontSize = "60" } = await res.json();
-        const verseBox = document.getElementById("verseText");
-        verseBox.innerText = verse || "Select a verse in the dock";
-        verseBox.style.fontSize = fontSize + "px";
+        const {
+          verse = "",
+          reference = "",
+          fontSize = "60",
+        } = await res.json();
+
+        const size = Math.max(12, parseInt(fontSize, 10) || 60);
+        bodyEl.style.fontSize = size + "px";
+        refEl.style.fontSize = Math.round(size * 0.42) + "px";
+        labelEl.style.fontSize = Math.round(size * 0.32) + "px";
+
+        if (verse) {
+          card.classList.remove("empty");
+          labelEl.textContent = WORD_OF_GOD_LABEL;
+          refEl.textContent = reference || "";
+          bodyEl.textContent = verse;
+        } else {
+          card.classList.add("empty");
+          labelEl.textContent = "";
+          refEl.textContent = "";
+          bodyEl.textContent = "Select a verse in the dock";
+          bodyEl.style.fontSize = size + "px";
+        }
       } catch (e) {
-        document.getElementById("verseText").innerText = "Connecting...";
+        card.classList.add("empty");
+        labelEl.textContent = "";
+        refEl.textContent = "";
+        bodyEl.textContent = "Connecting...";
       }
     }
 
