@@ -6,27 +6,33 @@
   <title>Kannada Bible Output</title>
 
   <style>
+    /* OBS/CEF often treats 100vh + flex oddly; fixed bottom is reliable */
+    html,
     body {
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
       background: transparent;
       font-family: "Noto Sans Kannada", sans-serif;
       overflow: hidden;
     }
 
     #verseBox {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
       width: 100%;
-      height: 100vh;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 50px 50px 56px;
+      padding: 24px 50px 52px;
       box-sizing: border-box;
+      text-align: center;
     }
 
     #verseBody {
-      text-align: center;
+      display: inline-block;
       max-width: 95%;
+      text-align: center;
       line-height: 1.45;
       color: #ffffff;
       font-weight: 700;
