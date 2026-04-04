@@ -25,35 +25,28 @@
     }
 
     #verseCard {
-      color: white;
       text-align: center;
-      text-shadow: 3px 3px 12px black;
-      background: rgba(0, 0, 0, 0.45);
-      padding: 24px 44px 28px;
-      border-radius: 20px;
       max-width: 95%;
-      line-height: 1.4;
-    }
-
-    #labelWordOfGod {
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      opacity: 0.92;
-      margin-bottom: 0.35em;
-    }
-
-    #referenceText {
-      font-weight: 600;
-      margin-bottom: 0.5em;
-      opacity: 0.95;
+      line-height: 1.45;
+      background: transparent;
+      padding: 0;
     }
 
     #verseBody {
-      font-weight: 400;
+      display: block;
+      color: #ffffff;
+      font-weight: 700;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
     }
 
-    #verseCard.empty #labelWordOfGod,
+    #referenceText {
+      display: block;
+      color: #ffffff;
+      font-weight: 600;
+      margin-top: 0.45em;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
+    }
+
     #verseCard.empty #referenceText {
       display: none;
     }
@@ -63,18 +56,14 @@
 <body>
   <div id="verseBox">
     <div id="verseCard" class="empty">
-      <div id="labelWordOfGod"></div>
-      <div id="referenceText"></div>
       <div id="verseBody">Loading...</div>
+      <div id="referenceText"></div>
     </div>
   </div>
 
   <script>
-    const WORD_OF_GOD_LABEL = "Word of God";
-
     async function updateVerse() {
       const card = document.getElementById("verseCard");
-      const labelEl = document.getElementById("labelWordOfGod");
       const refEl = document.getElementById("referenceText");
       const bodyEl = document.getElementById("verseBody");
 
@@ -88,24 +77,20 @@
 
         const size = Math.max(12, parseInt(fontSize, 10) || 60);
         bodyEl.style.fontSize = size + "px";
-        refEl.style.fontSize = Math.round(size * 0.42) + "px";
-        labelEl.style.fontSize = Math.round(size * 0.32) + "px";
+        refEl.style.fontSize = Math.round(size * 0.48) + "px";
 
         if (verse) {
           card.classList.remove("empty");
-          labelEl.textContent = WORD_OF_GOD_LABEL;
           refEl.textContent = reference || "";
           bodyEl.textContent = verse;
         } else {
           card.classList.add("empty");
-          labelEl.textContent = "";
           refEl.textContent = "";
           bodyEl.textContent = "Select a verse in the dock";
           bodyEl.style.fontSize = size + "px";
         }
       } catch (e) {
         card.classList.add("empty");
-        labelEl.textContent = "";
         refEl.textContent = "";
         bodyEl.textContent = "Connecting...";
       }
