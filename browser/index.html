@@ -18,80 +18,81 @@
       width: 100%;
       height: 100vh;
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: center;
-      padding: 50px;
+      padding: 40px 50px;
       box-sizing: border-box;
     }
 
-    #verseCard {
+    #verseBody {
       text-align: center;
       max-width: 95%;
       line-height: 1.45;
-      background: transparent;
-      padding: 0;
-    }
-
-    #verseBody {
-      display: block;
       color: #ffffff;
       font-weight: 700;
       text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
     }
 
-    #referenceText {
+    #verseBody .verse-reference {
       display: block;
-      color: #ffffff;
+      margin-top: 0.5em;
       font-weight: 600;
-      margin-top: 0.45em;
+      color: #ffffff;
       text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
-    }
-
-    #verseCard.empty #referenceText {
-      display: none;
     }
   </style>
 </head>
 
 <body>
   <div id="verseBox">
-    <div id="verseCard" class="empty">
-      <div id="verseBody">Loading...</div>
-      <div id="referenceText"></div>
-    </div>
+    <div id="verseBody">Loading...</div>
   </div>
 
   <script>
-    async function updateVerse() {
-      const card = document.getElementById("verseCard");
-      const refEl = document.getElementById("referenceText");
+    function buildReference(data) {
+      let ref = (data.reference || "").trim();
+      if (ref) return ref;
+      const { book, chapter, verseNum } = data;
+      if (book && chapter !== "" && chapter != null && verseNum !== "" && verseNum != null) {
+        return `${book} ${chapter}:${verseNum}`;
+      }
+      return "";
+    }
+
+    function renderOverlay(verse, reference, fontSize) {
       const bodyEl = document.getElementById("verseBody");
+      const size = Math.max(12, parseInt(fontSize, 10) || 60);
+      bodyEl.style.fontSize = size + "px";
 
-      try {
-        const res = await fetch("/api/state", { cache: "no-store" });
-        const {
-          verse = "",
-          reference = "",
-          fontSize = "60",
-        } = await res.json();
+      bodyEl.replaceChildren();
 
-        const size = Math.max(12, parseInt(fontSize, 10) || 60);
-        bodyEl.style.fontSize = size + "px";
+      if (!verse) {
+        bodyEl.textContent = "Select a verse in the dock";
+        return;
+      }
+
+      bodyEl.appendChild(document.createTextNode(verse));
+
+      if (reference) {
+        const refEl = document.createElement("span");
+        refEl.className = "verse-reference";
+        refEl.textContent = reference;
         refEl.style.fontSize = Math.round(size * 0.48) + "px";
+        bodyEl.appendChild(refEl);
+      }
+    }
 
-        if (verse) {
-          card.classList.remove("empty");
-          refEl.textContent = reference || "";
-          bodyEl.textContent = verse;
-        } else {
-          card.classList.add("empty");
-          refEl.textContent = "";
-          bodyEl.textContent = "Select a verse in the dock";
-          bodyEl.style.fontSize = size + "px";
-        }
+    async function updateVerse() {
+      try {
+        const res = await fetch("/api/state?_=" + Date.now(), {
+          cache: "no-store",
+        });
+        const data = await res.json();
+        const verse = data.verse || "";
+        const reference = buildReference(data);
+        renderOverlay(verse, reference, data.fontSize || "60");
       } catch (e) {
-        card.classList.add("empty");
-        refEl.textContent = "";
+        const bodyEl = document.getElementById("verseBody");
         bodyEl.textContent = "Connecting...";
       }
     }
