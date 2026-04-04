@@ -17,13 +17,21 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/state", (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("Pragma", "no-cache");
   res.json(state);
 });
 
 app.post("/api/state", (req, res) => {
-  if (req.body.verse !== undefined) state.verse = req.body.verse;
-  if (req.body.reference !== undefined) state.reference = req.body.reference;
-  if (req.body.fontSize !== undefined) state.fontSize = req.body.fontSize;
+  const b = req.body;
+  if (b.verse !== undefined) state.verse = b.verse;
+  if (b.fontSize !== undefined) state.fontSize = b.fontSize;
+  if (b.book && b.chapter != null && b.verseNum != null) {
+    state.reference = `${b.book} ${b.chapter}:${b.verseNum}`;
+  } else if (b.reference !== undefined) {
+    state.reference = b.reference;
+  }
+  res.set("Cache-Control", "no-store");
   res.json(state);
 });
 

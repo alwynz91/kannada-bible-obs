@@ -1,7 +1,7 @@
 let bibleData = {};
 
 async function loadBible() {
-  const res = await fetch("../data/bible.json");
+  const res = await fetch("../data/bible.json", { cache: "no-store" });
   bibleData = await res.json();
 }
 
@@ -16,6 +16,7 @@ fontSizeSlider.addEventListener("input", () => {
   fetch("/api/state", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     body: JSON.stringify({ fontSize: size }),
   });
 });
@@ -63,7 +64,14 @@ function searchChapter() {
       fetch("/api/state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verse: verseText, reference }),
+        cache: "no-store",
+        body: JSON.stringify({
+          verse: verseText,
+          reference,
+          book,
+          chapter: String(chapter),
+          verseNum: String(verseNum),
+        }),
       });
     };
 

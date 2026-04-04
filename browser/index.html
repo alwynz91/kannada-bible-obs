@@ -68,7 +68,7 @@
       const bodyEl = document.getElementById("verseBody");
 
       try {
-        const res = await fetch("/api/state");
+        const res = await fetch("/api/state", { cache: "no-store" });
         const {
           verse = "",
           reference = "",
