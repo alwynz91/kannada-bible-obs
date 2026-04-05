@@ -32,12 +32,18 @@ function searchChapter() {
   const parts = input.split(/\s+/).filter(Boolean);
 
   if (parts.length < 2) {
-    verseList.innerHTML = `<p style="color:red;">Type like: Genesis 1</p>`;
+    verseList.innerHTML = `<p style="color:red;">Type like: Genesis 1 or 1 Kings 5</p>`;
     return;
   }
 
-  const bookInput = parts[0];
-  const chapter = parts[1];
+  // Last word is chapter number; everything before is the book (handles "1 Kings", "2 Samuel", "Song of Solomon", …)
+  const chapter = parts[parts.length - 1];
+  if (!/^\d+$/.test(chapter)) {
+    verseList.innerHTML = `<p style="color:red;">End with chapter number, e.g. <b>1 Kings 5</b></p>`;
+    return;
+  }
+
+  const bookInput = parts.slice(0, -1).join(" ");
 
   const book = Object.keys(bibleData).find(
     (b) => b.toLowerCase() === bookInput.toLowerCase()
