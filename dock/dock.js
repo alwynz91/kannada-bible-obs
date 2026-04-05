@@ -52,39 +52,64 @@ searchInput.addEventListener("keydown", (e) => {
   }
 });
 
-async function searchChapter() {
-  await bibleReady;
+function appendBackToChapters(book) {
+  const nav = document.createElement("div");
+  nav.className = "dock-nav";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "dock-back";
+  btn.textContent = "← Chapters";
+  btn.onclick = () => showChapters(book);
+  nav.appendChild(btn);
+  verseList.appendChild(nav);
+}
 
-  if (bibleLoadError || !bibleData) {
-    verseList.innerHTML = `<p style="color:red;">Bible data is not available. Refresh the page.</p>`;
-    return;
-  }
+function showChapters(book) {
+  verseList.innerHTML = "";
+  searchInput.value = book;
 
-  const input = searchInput.value.trim();
-  const parts = input.split(/\s+/).filter(Boolean);
+  const hint = document.createElement("p");
+  hint.className = "dock-hint";
+  hint.textContent = `${book} — tap a chapter`;
+  verseList.appendChild(hint);
 
-  if (parts.length < 2) {
-    verseList.innerHTML = `<p style="color:red;">Type book then chapter, e.g. <b>Genesis 1</b> or <b>1 Kings 5</b></p>`;
-    return;
-  }
+  const grid = document.createElement("div");
+  grid.className = "chapterGrid";
 
-  const chapter = parts[parts.length - 1];
-  if (!/^\d+$/.test(chapter)) {
-    verseList.innerHTML = `<p style="color:red;">End with chapter number, e.g. <b>1 Kings 5</b></p>`;
-    return;
-  }
+  const chapters = Object.keys(bibleData[book]).sort((a, b) => Number(a) - Number(b));
+  chapters.forEach((ch) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chapterItem";
+    btn.textContent = ch;
+    btn.title = `${book} ${ch}`;
+    btn.onclick = () => {
+      searchInput.value = `${book} ${ch}`;
+      showVerses(book, ch);
+    };
+    grid.appendChild(btn);
+  });
 
-  const bookInput = parts.slice(0, -1).join(" ");
-  const book = findBook(bookInput);
+  verseList.appendChild(grid);
+}
 
+function showVerses(book, chapter) {
+  const chapterData = bibleData[book]?.[chapter];
   verseList.innerHTML = "";
 
-  const chapterData = book ? bibleData[book]?.[chapter] : null;
-
   if (!chapterData) {
-    verseList.innerHTML = `<p style="color:red;">Not found: <b>${bookInput}</b> chapter <b>${chapter}</b></p>`;
+    verseList.innerHTML = `<p style="color:red;">No verses for <b>${book}</b> chapter <b>${chapter}</b></p>`;
     return;
   }
+
+  searchInput.value = `${book} ${chapter}`;
+
+  appendBackToChapters(book);
+
+  const sub = document.createElement("p");
+  sub.className = "dock-hint";
+  sub.textContent = `${book} ${chapter} — tap a verse`;
+  verseList.appendChild(sub);
 
   const verseNums = Object.keys(chapterData).sort((a, b) => Number(a) - Number(b));
 
@@ -113,4 +138,45 @@ async function searchChapter() {
 
     verseList.appendChild(div);
   });
+}
+
+async function searchChapter() {
+  await bibleReady;
+
+  if (bibleLoadError || !bibleData) {
+    verseList.innerHTML = `<p style="color:red;">Bible data is not available. Refresh the page.</p>`;
+    return;
+  }
+
+  const input = searchInput.value.trim();
+  const parts = input.split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    verseList.innerHTML = `<p style="color:red;">Type a book name (e.g. <b>Genesis</b> or <b>1 Kings</b>) or <b>Genesis 5</b> for a chapter.</p>`;
+    return;
+  }
+
+  const last = parts[parts.length - 1];
+  const endsWithChapter = /^\d+$/.test(last);
+
+  if (endsWithChapter && parts.length >= 2) {
+    const chapter = last;
+    const bookInput = parts.slice(0, -1).join(" ");
+    const book = findBook(bookInput);
+    if (!book) {
+      verseList.innerHTML = `<p style="color:red;">Unknown book: <b>${bookInput}</b></p>`;
+      return;
+    }
+    showVerses(book, chapter);
+    return;
+  }
+
+  const bookInput = parts.join(" ");
+  const book = findBook(bookInput);
+  if (!book) {
+    verseList.innerHTML = `<p style="color:red;">Unknown book: <b>${bookInput}</b></p>`;
+    return;
+  }
+
+  showChapters(book);
 }

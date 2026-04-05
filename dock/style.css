@@ -57,3 +57,49 @@ input {
 .verseItem:hover {
   background: #333;
 }
+
+.dock-hint {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.dock-nav {
+  margin-bottom: 10px;
+}
+
+.dock-back {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dock-back:hover {
+  background: #444;
+}
+
+.chapterGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chapterItem {
+  background: #1a3d2a;
+  color: #fff;
+  border: 1px solid #2d6a4f;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 3rem;
+}
+
+.chapterItem:hover {
+  background: #2d5a3d;
+}
