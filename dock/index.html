@@ -12,7 +12,17 @@
 
     <h2>📖 Kannada Bible Dock</h2>
 
-    <input id="searchInput" type="text" placeholder="Book only (Genesis, 1 Kings) or book + chapter (Genesis 5) — Enter" />
+    <div class="search-wrap">
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Book only (Genesis, 1 Kings) or book + chapter (Genesis 5) — Enter"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <div id="suggestPanel" class="suggest-panel hidden" aria-label="Book suggestions"></div>
+    </div>
+    <p class="shortcut-hint">⌘A / Ctrl+A — copy all verses in the list (click outside the search box first)</p>
 
     <div class="settings">
       <label>Font Size</label>
@@ -21,6 +31,7 @@
 
     <div id="verseList"></div>
 
+    <div id="dockToast" role="status" aria-live="polite"></div>
   </div>
 
   <script src="dock.js"></script>

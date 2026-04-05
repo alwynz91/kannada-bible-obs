@@ -31,9 +31,80 @@ function findBook(bookInput) {
   return Object.keys(bibleData).find((b) => normalizeBookName(b) === want);
 }
 
+function booksMatchingPrefix(query) {
+  if (!bibleData || !query.trim()) return [];
+  const n = normalizeBookName(query);
+  return Object.keys(bibleData)
+    .filter((b) => normalizeBookName(b).startsWith(n))
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+    .slice(0, 14);
+}
+
+function shouldHideSuggestionsForQuery(q) {
+  const parts = q.trim().split(/\s+/).filter(Boolean);
+  return parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1]);
+}
+
 const searchInput = document.getElementById("searchInput");
 const verseList = document.getElementById("verseList");
 const fontSizeSlider = document.getElementById("fontSize");
+const suggestPanel = document.getElementById("suggestPanel");
+const dockToast = document.getElementById("dockToast");
+
+function hideSuggestions() {
+  if (suggestPanel) {
+    suggestPanel.classList.add("hidden");
+    suggestPanel.replaceChildren();
+  }
+}
+
+function updateSuggestions() {
+  if (!suggestPanel || !bibleData) return;
+  const q = searchInput.value;
+  if (shouldHideSuggestionsForQuery(q)) {
+    hideSuggestions();
+    return;
+  }
+  const matches = booksMatchingPrefix(q.trim());
+  suggestPanel.replaceChildren();
+  if (matches.length === 0) {
+    suggestPanel.classList.add("hidden");
+    return;
+  }
+  matches.forEach((name) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "suggest-item";
+    btn.textContent = name;
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      searchInput.value = name;
+      hideSuggestions();
+      searchInput.focus();
+    });
+    suggestPanel.appendChild(btn);
+  });
+  suggestPanel.classList.remove("hidden");
+}
+
+searchInput.addEventListener("input", updateSuggestions);
+searchInput.addEventListener("focus", updateSuggestions);
+
+searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    hideSuggestions();
+    return;
+  }
+  if (e.key === "Enter") {
+    hideSuggestions();
+    e.preventDefault();
+    void searchChapter();
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-wrap")) hideSuggestions();
+});
 
 fontSizeSlider.addEventListener("input", () => {
   const size = fontSizeSlider.value;
@@ -45,10 +116,52 @@ fontSizeSlider.addEventListener("input", () => {
   });
 });
 
-searchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    void searchChapter();
+function isTypableField(el) {
+  if (!el || !el.tagName) return false;
+  const t = el.tagName.toLowerCase();
+  if (t === "textarea") return true;
+  if (t === "input") {
+    const type = (el.type || "").toLowerCase();
+    if (type === "range" || type === "button" || type === "checkbox" || type === "radio") return false;
+    return true;
+  }
+  return Boolean(el.isContentEditable);
+}
+
+function getAllVerseListText() {
+  const items = verseList.querySelectorAll(".verseItem");
+  if (!items.length) return "";
+  return Array.from(items)
+    .map((el) => el.innerText.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function showToast(msg) {
+  if (!dockToast) return;
+  dockToast.textContent = msg;
+  dockToast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => dockToast.classList.remove("show"), 2000);
+}
+
+document.addEventListener("keydown", async (e) => {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return;
+  const k = e.key.toLowerCase();
+  if (k !== "a") return;
+  if (isTypableField(e.target)) return;
+
+  const text = getAllVerseListText();
+  if (!text) return;
+
+  e.preventDefault();
+  try {
+    await navigator.clipboard.writeText(text);
+    const n = verseList.querySelectorAll(".verseItem").length;
+    showToast(`Copied ${n} verse${n === 1 ? "" : "s"} to clipboard`);
+  } catch (err) {
+    showToast("Could not copy (clipboard blocked?)");
   }
 });
 
@@ -65,6 +178,7 @@ function appendBackToChapters(book) {
 }
 
 function showChapters(book) {
+  hideSuggestions();
   verseList.innerHTML = "";
   searchInput.value = book;
 
@@ -94,6 +208,7 @@ function showChapters(book) {
 }
 
 function showVerses(book, chapter) {
+  hideSuggestions();
   const chapterData = bibleData[book]?.[chapter];
   verseList.innerHTML = "";
 
@@ -142,6 +257,7 @@ function showVerses(book, chapter) {
 
 async function searchChapter() {
   await bibleReady;
+  hideSuggestions();
 
   if (bibleLoadError || !bibleData) {
     verseList.innerHTML = `<p style="color:red;">Bible data is not available. Refresh the page.</p>`;
