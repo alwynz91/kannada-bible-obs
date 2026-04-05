@@ -1,11 +1,35 @@
-let bibleData = {};
+let bibleData = null;
+let bibleLoadError = null;
 
-async function loadBible() {
-  const res = await fetch("../data/bible.json", { cache: "no-store" });
-  bibleData = await res.json();
+const bibleReady = (async function loadBible() {
+  const list = document.getElementById("verseList");
+  if (list) list.innerHTML = "<p>Loading Bible…</p>";
+  try {
+    const res = await fetch("../data/bible.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    bibleData = await res.json();
+    if (!bibleData || typeof bibleData !== "object" || Array.isArray(bibleData)) {
+      throw new Error("Invalid bible.json shape");
+    }
+    if (list) list.innerHTML = "";
+  } catch (e) {
+    bibleLoadError = e;
+    bibleData = null;
+    if (list) {
+      list.innerHTML = `<p style="color:red;">Could not load bible.json (${e.message}). Check the network tab or refresh.</p>`;
+    }
+  }
+})();
+
+function normalizeBookName(s) {
+  return s.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-loadBible();
+function findBook(bookInput) {
+  if (!bibleData) return undefined;
+  const want = normalizeBookName(bookInput);
+  return Object.keys(bibleData).find((b) => normalizeBookName(b) === want);
+}
 
 const searchInput = document.getElementById("searchInput");
 const verseList = document.getElementById("verseList");
@@ -23,20 +47,27 @@ fontSizeSlider.addEventListener("input", () => {
 
 searchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    searchChapter();
+    e.preventDefault();
+    void searchChapter();
   }
 });
 
-function searchChapter() {
+async function searchChapter() {
+  await bibleReady;
+
+  if (bibleLoadError || !bibleData) {
+    verseList.innerHTML = `<p style="color:red;">Bible data is not available. Refresh the page.</p>`;
+    return;
+  }
+
   const input = searchInput.value.trim();
   const parts = input.split(/\s+/).filter(Boolean);
 
   if (parts.length < 2) {
-    verseList.innerHTML = `<p style="color:red;">Type like: Genesis 1 or 1 Kings 5</p>`;
+    verseList.innerHTML = `<p style="color:red;">Type book then chapter, e.g. <b>Genesis 1</b> or <b>1 Kings 5</b></p>`;
     return;
   }
 
-  // Last word is chapter number; everything before is the book (handles "1 Kings", "2 Samuel", "Song of Solomon", …)
   const chapter = parts[parts.length - 1];
   if (!/^\d+$/.test(chapter)) {
     verseList.innerHTML = `<p style="color:red;">End with chapter number, e.g. <b>1 Kings 5</b></p>`;
@@ -44,21 +75,20 @@ function searchChapter() {
   }
 
   const bookInput = parts.slice(0, -1).join(" ");
-
-  const book = Object.keys(bibleData).find(
-    (b) => b.toLowerCase() === bookInput.toLowerCase()
-  );
+  const book = findBook(bookInput);
 
   verseList.innerHTML = "";
 
   const chapterData = book ? bibleData[book]?.[chapter] : null;
 
   if (!chapterData) {
-    verseList.innerHTML = `<p style="color:red;">Not found: ${bookInput} ${chapter}</p>`;
+    verseList.innerHTML = `<p style="color:red;">Not found: <b>${bookInput}</b> chapter <b>${chapter}</b></p>`;
     return;
   }
 
-  Object.keys(chapterData).forEach((verseNum) => {
+  const verseNums = Object.keys(chapterData).sort((a, b) => Number(a) - Number(b));
+
+  verseNums.forEach((verseNum) => {
     const verseText = chapterData[verseNum];
 
     const div = document.createElement("div");
