@@ -6,42 +6,81 @@
   <title>Kannada Bible Output</title>
 
   <style>
-    /* OBS/CEF often treats 100vh + flex oddly; fixed bottom is reliable */
+    /*
+      Tune this box to match your lower-third graphic (UHD 3840×2160 template).
+      Values are % of the full browser source (set OBS Browser to 3840×2160 to match).
+    */
+    :root {
+      --lz-inset-left: 12%;
+      --lz-inset-right: 12%;
+      --lz-inset-bottom: 6%;
+      --lz-height: 22%;
+    }
+
     html,
     body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background: transparent;
+      background: #000;
       font-family: "Noto Sans Kannada", sans-serif;
       overflow: hidden;
     }
 
-    #verseBox {
+    #stage {
       position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      inset: 0;
+      background: #000;
+    }
+
+    #bgVideo {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      padding: 24px 50px 52px;
+      height: 100%;
+      object-fit: contain;
+      object-position: 50% 50%;
+      z-index: 0;
+    }
+
+    #bgVideo.hidden {
+      display: none;
+    }
+
+    /* Verse + reference only inside this rectangle (lower-third safe area) */
+    #verseBox {
+      position: absolute;
+      left: var(--lz-inset-left);
+      right: var(--lz-inset-right);
+      bottom: var(--lz-inset-bottom);
+      height: var(--lz-height);
       box-sizing: border-box;
+      padding: 0.35em 0.5em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
     }
 
     #verseBody {
-      display: inline-block;
-      max-width: 95%;
-      text-align: center;
-      line-height: 1.45;
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      overflow: hidden;
       color: #ffffff;
       font-weight: 700;
       text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
+      line-height: 1.35;
+      word-wrap: break-word;
     }
 
     #verseBody .verse-reference {
       display: block;
-      margin-top: 0.5em;
+      margin-top: 0.35em;
       font-weight: 600;
       color: #ffffff;
       text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
@@ -50,11 +89,34 @@
 </head>
 
 <body>
-  <div id="verseBox">
-    <div id="verseBody">Loading...</div>
+  <div id="stage">
+    <video
+      id="bgVideo"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+    >
+      <source src="assets/lower-third.mp4" type="video/mp4" />
+      <source src="assets/lower-third.mov" type="video/quicktime" />
+    </video>
+    <div id="verseBox">
+      <div id="verseBody">Loading...</div>
+    </div>
   </div>
 
   <script>
+    (function setupVideo() {
+      const v = document.getElementById("bgVideo");
+      v.addEventListener("error", () => {
+        v.classList.add("hidden");
+      });
+      v.play().catch(() => {
+        v.classList.add("hidden");
+      });
+    })();
+
     function buildReference(data) {
       let ref = (data.reference || "").trim();
       if (ref) return ref;
