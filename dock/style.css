@@ -72,6 +72,17 @@ h2 {
   opacity: 1;
 }
 
+/* Selection must be visible: real input text is transparent (mirror shows it). */
+.search-shell input::selection {
+  background: rgba(45, 90, 61, 0.95);
+  color: #fff;
+}
+
+.search-shell input::-moz-selection {
+  background: rgba(45, 90, 61, 0.95);
+  color: #fff;
+}
+
 input {
   width: 100%;
   padding: 12px;

@@ -239,8 +239,21 @@ searchInput.addEventListener("focus", () => {
 });
 searchInput.addEventListener("scroll", syncSearchMirrorScroll);
 
+function isStandardEditShortcut(e) {
+  if (!e.metaKey && !e.ctrlKey) return false;
+  const k = e.key.toLowerCase();
+  // Select all, copy, paste, cut, undo, redo (Mac often uses ⌘⇧Z).
+  if (k === "a" || k === "c" || k === "v" || k === "x" || k === "z" || k === "y") return true;
+  // Move caret / extend selection by word or line (common OS bindings).
+  if (k === "arrowleft" || k === "arrowright" || k === "arrowup" || k === "arrowdown") return true;
+  if (k === "home" || k === "end" || k === "backspace" || k === "delete") return true;
+  return false;
+}
+
 searchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Tab" && !e.shiftKey) {
+  if (isStandardEditShortcut(e)) return;
+
+  if (e.key === "Tab" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
     if (acceptGhostCompletion()) {
       e.preventDefault();
     }
@@ -250,6 +263,16 @@ searchInput.addEventListener("keydown", (e) => {
     e.preventDefault();
     void searchChapter();
   }
+});
+
+searchInput.addEventListener("cut", () => {
+  queueMicrotask(() => updateInlineMirror());
+});
+searchInput.addEventListener("paste", () => {
+  queueMicrotask(() => updateInlineMirror());
+});
+searchInput.addEventListener("keyup", (e) => {
+  if (isStandardEditShortcut(e)) updateInlineMirror();
 });
 
 fontSizeSlider.addEventListener("input", () => {
