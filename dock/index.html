@@ -12,17 +12,17 @@
 
     <h2>📖 Kannada Bible Dock</h2>
 
-    <div class="search-wrap">
+    <div class="search-shell">
+      <div id="searchMirror" class="search-mirror" aria-hidden="true"></div>
       <input
         id="searchInput"
         type="text"
-        placeholder="Book only (Genesis, 1 Kings) or book + chapter (Genesis 5) — Enter"
+        placeholder="Book (gray shows completion) or Book 5 — Enter"
         autocomplete="off"
         spellcheck="false"
       />
-      <div id="suggestPanel" class="suggest-panel hidden" aria-label="Book suggestions"></div>
     </div>
-    <p class="shortcut-hint">⌘A / Ctrl+A — copy all verses in the list (click outside the search box first)</p>
+    <p class="shortcut-hint">Tab accepts gray completion · Enter opens chapters (or verses if chapter typed) · ⌘A / Ctrl+A copies verse list when focus is outside this box</p>
 
     <div class="settings">
       <label>Font Size</label>

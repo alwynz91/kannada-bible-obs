@@ -21,8 +21,84 @@ const bibleReady = (async function loadBible() {
   }
 })();
 
+/** Canonical Protestant order: first prefix match (e.g. "g" → Genesis, not Galatians). */
+const BOOK_ORDER = [
+  "Genesis",
+  "Exodus",
+  "Leviticus",
+  "Numbers",
+  "Deuteronomy",
+  "Joshua",
+  "Judges",
+  "Ruth",
+  "1 Samuel",
+  "2 Samuel",
+  "1 Kings",
+  "2 Kings",
+  "1 Chronicles",
+  "2 Chronicles",
+  "Ezra",
+  "Nehemiah",
+  "Esther",
+  "Job",
+  "Psalms",
+  "Proverbs",
+  "Ecclesiastes",
+  "Song of Songs",
+  "Isaiah",
+  "Jeremiah",
+  "Lamentations",
+  "Ezekiel",
+  "Daniel",
+  "Hosea",
+  "Joel",
+  "Amos",
+  "Obadiah",
+  "Jonah",
+  "Micah",
+  "Nahum",
+  "Habakkuk",
+  "Zephaniah",
+  "Haggai",
+  "Zechariah",
+  "Malachi",
+  "Matthew",
+  "Mark",
+  "Luke",
+  "John",
+  "Acts",
+  "Romans",
+  "1 Corinthians",
+  "2 Corinthians",
+  "Galatians",
+  "Ephesians",
+  "Philippians",
+  "Colossians",
+  "1 Thessalonians",
+  "2 Thessalonians",
+  "1 Timothy",
+  "2 Timothy",
+  "Titus",
+  "Philemon",
+  "Hebrews",
+  "James",
+  "1 Peter",
+  "2 Peter",
+  "1 John",
+  "2 John",
+  "3 John",
+  "Jude",
+  "Revelation",
+];
+
 function normalizeBookName(s) {
   return s.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function bookCanonIndex(name) {
+  const n = normalizeBookName(name);
+  const i = BOOK_ORDER.findIndex((b) => normalizeBookName(b) === n);
+  return i === -1 ? 10000 : i;
 }
 
 function findBook(bookInput) {
@@ -36,74 +112,144 @@ function booksMatchingPrefix(query) {
   const n = normalizeBookName(query);
   return Object.keys(bibleData)
     .filter((b) => normalizeBookName(b).startsWith(n))
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-    .slice(0, 14);
+    .sort((a, b) => {
+      const da = bookCanonIndex(a) - bookCanonIndex(b);
+      if (da !== 0) return da;
+      return a.localeCompare(b, undefined, { sensitivity: "base" });
+    });
 }
 
-function shouldHideSuggestionsForQuery(q) {
+function shouldHideGhostForQuery(q) {
   const parts = q.trim().split(/\s+/).filter(Boolean);
   return parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1]);
+}
+
+/** Suffix of `completion` that extends `typedBook` (case-insensitive char match). */
+function ghostSuffix(typedBook, completion) {
+  const a = typedBook;
+  const b = completion;
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i].toLowerCase() === b[j].toLowerCase()) {
+      i++;
+      j++;
+    } else {
+      return "";
+    }
+  }
+  if (i !== a.length) return "";
+  return b.slice(j);
+}
+
+function escapeHtml(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 const searchInput = document.getElementById("searchInput");
 const verseList = document.getElementById("verseList");
 const fontSizeSlider = document.getElementById("fontSize");
-const suggestPanel = document.getElementById("suggestPanel");
+const searchMirror = document.getElementById("searchMirror");
 const dockToast = document.getElementById("dockToast");
 
-function hideSuggestions() {
-  if (suggestPanel) {
-    suggestPanel.classList.add("hidden");
-    suggestPanel.replaceChildren();
+function syncSearchMirrorScroll() {
+  if (searchMirror && searchInput) searchMirror.scrollLeft = searchInput.scrollLeft;
+}
+
+function updateInlineMirror() {
+  if (!searchMirror || !searchInput) return;
+  const val = searchInput.value;
+  if (!bibleData) {
+    searchMirror.innerHTML = escapeHtml(val);
+    syncSearchMirrorScroll();
+    return;
+  }
+  if (shouldHideGhostForQuery(val)) {
+    searchMirror.innerHTML = escapeHtml(val);
+    syncSearchMirrorScroll();
+    return;
+  }
+  const bookPart = val.trim();
+  if (!bookPart) {
+    searchMirror.innerHTML = escapeHtml(val);
+    syncSearchMirrorScroll();
+    return;
+  }
+  const matches = booksMatchingPrefix(bookPart);
+  const first = matches[0];
+  const ghost = first ? ghostSuffix(bookPart, first) : "";
+  if (!ghost || normalizeBookName(bookPart) === normalizeBookName(first)) {
+    searchMirror.innerHTML = escapeHtml(val);
+    syncSearchMirrorScroll();
+    return;
+  }
+  searchMirror.innerHTML = `${escapeHtml(val)}<span class="mirror-ghost">${escapeHtml(ghost)}</span>`;
+  syncSearchMirrorScroll();
+}
+
+function expandBookPrefixIfNeeded() {
+  if (!bibleData) return;
+  const trimmed = searchInput.value.trim();
+  if (!trimmed) return;
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const last = parts[parts.length - 1];
+  if (/^\d+$/.test(last) && parts.length >= 2) {
+    const bookPart = parts.slice(0, -1).join(" ");
+    if (findBook(bookPart)) return;
+    const matches = booksMatchingPrefix(bookPart);
+    if (matches[0]) {
+      searchInput.value = `${matches[0]} ${last}`;
+      updateInlineMirror();
+    }
+    return;
+  }
+  const bookPart = parts.join(" ");
+  if (findBook(bookPart)) return;
+  const matches = booksMatchingPrefix(bookPart);
+  if (matches[0]) {
+    searchInput.value = matches[0];
+    updateInlineMirror();
   }
 }
 
-function updateSuggestions() {
-  if (!suggestPanel || !bibleData) return;
-  const q = searchInput.value;
-  if (shouldHideSuggestionsForQuery(q)) {
-    hideSuggestions();
-    return;
-  }
-  const matches = booksMatchingPrefix(q.trim());
-  suggestPanel.replaceChildren();
-  if (matches.length === 0) {
-    suggestPanel.classList.add("hidden");
-    return;
-  }
-  matches.forEach((name) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "suggest-item";
-    btn.textContent = name;
-    btn.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      searchInput.value = name;
-      hideSuggestions();
-      searchInput.focus();
-    });
-    suggestPanel.appendChild(btn);
-  });
-  suggestPanel.classList.remove("hidden");
+function acceptGhostCompletion() {
+  if (!bibleData) return false;
+  const val = searchInput.value;
+  if (shouldHideGhostForQuery(val)) return false;
+  const bookPart = val.trim();
+  const matches = booksMatchingPrefix(bookPart);
+  const first = matches[0];
+  if (!first) return false;
+  const ghost = ghostSuffix(bookPart, first);
+  if (!ghost || normalizeBookName(bookPart) === normalizeBookName(first)) return false;
+  searchInput.value = first;
+  updateInlineMirror();
+  return true;
 }
 
-searchInput.addEventListener("input", updateSuggestions);
-searchInput.addEventListener("focus", updateSuggestions);
+searchInput.addEventListener("input", () => {
+  updateInlineMirror();
+});
+searchInput.addEventListener("focus", () => {
+  updateInlineMirror();
+});
+searchInput.addEventListener("scroll", syncSearchMirrorScroll);
 
 searchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    hideSuggestions();
+  if (e.key === "Tab" && !e.shiftKey) {
+    if (acceptGhostCompletion()) {
+      e.preventDefault();
+    }
     return;
   }
   if (e.key === "Enter") {
-    hideSuggestions();
     e.preventDefault();
     void searchChapter();
   }
-});
-
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".search-wrap")) hideSuggestions();
 });
 
 fontSizeSlider.addEventListener("input", () => {
@@ -178,7 +324,7 @@ function appendBackToChapters(book) {
 }
 
 function showChapters(book) {
-  hideSuggestions();
+  updateInlineMirror();
   verseList.innerHTML = "";
   searchInput.value = book;
 
@@ -205,10 +351,11 @@ function showChapters(book) {
   });
 
   verseList.appendChild(grid);
+  updateInlineMirror();
 }
 
 function showVerses(book, chapter) {
-  hideSuggestions();
+  updateInlineMirror();
   const chapterData = bibleData[book]?.[chapter];
   verseList.innerHTML = "";
 
@@ -253,16 +400,19 @@ function showVerses(book, chapter) {
 
     verseList.appendChild(div);
   });
+  updateInlineMirror();
 }
 
 async function searchChapter() {
   await bibleReady;
-  hideSuggestions();
+  updateInlineMirror();
 
   if (bibleLoadError || !bibleData) {
     verseList.innerHTML = `<p style="color:red;">Bible data is not available. Refresh the page.</p>`;
     return;
   }
+
+  expandBookPrefixIfNeeded();
 
   const input = searchInput.value.trim();
   const parts = input.split(/\s+/).filter(Boolean);
@@ -296,3 +446,5 @@ async function searchChapter() {
 
   showChapters(book);
 }
+
+bibleReady.then(() => updateInlineMirror());
