@@ -36,7 +36,11 @@
       line-height: 1.45;
       color: #ffffff;
       font-weight: 700;
-      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
+      -webkit-text-stroke: 1px #000000;
+      paint-order: stroke fill;
+      text-shadow:
+        0 0 2px rgba(0, 0, 0, 0.9),
+        2px 2px 10px rgba(0, 0, 0, 0.85);
     }
 
     #verseBody .verse-reference {
@@ -44,7 +48,11 @@
       margin-top: 0.5em;
       font-weight: 600;
       color: #ffffff;
-      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.9);
+      -webkit-text-stroke: 1px #000000;
+      paint-order: stroke fill;
+      text-shadow:
+        0 0 2px rgba(0, 0, 0, 0.9),
+        2px 2px 10px rgba(0, 0, 0, 0.85);
     }
   </style>
 </head>
