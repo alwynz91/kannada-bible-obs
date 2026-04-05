@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Import Kannada Bible from a Word .docx into data/bible.json.
+Import Bible text from a Word .docx into data/bible.json.
 
 Expected layout (as exported from Word):
   - Book title line (e.g. "Genesis")
@@ -10,6 +10,7 @@ Expected layout (as exported from Word):
 Usage:
   python3 import_bible_docx.py /path/to/Bible.docx
   python3 import_bible_docx.py /path/to/Bible.docx --merge   # keep other books in bible.json
+  python3 merge_konkani_docx.py   # merge fixed list from ~/Downloads + Catholic key order
 
 Requires: Python 3.9+ (stdlib only).
 """
@@ -26,10 +27,24 @@ from pathlib import Path
 
 W_MAIN = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
-# Protestant canon, longest names first so "1 Corinthians" matches before "Corinthians".
+# Aliases → single JSON key (Catholic naming preferred).
+BOOK_ALIASES: dict[str, str] = {
+    "ecclesiasticus": "Sirach",
+    "song of solomon": "Song of Songs",
+}
+
+
+def canonical_book(name: str) -> str:
+    key = name.strip().lower()
+    return BOOK_ALIASES.get(key, name)
+
+
+# Known book titles, longest names first so "1 Corinthians" matches before "Corinthians".
 BOOK_NAMES: list[str] = sorted(
     [
-        "Song of Solomon",
+        "Ecclesiasticus",
+        "2 Maccabees",
+        "1 Maccabees",
         "1 Corinthians",
         "2 Corinthians",
         "1 Thessalonians",
@@ -47,6 +62,8 @@ BOOK_NAMES: list[str] = sorted(
         "2 Samuel",
         "1 Kings",
         "2 Kings",
+        "Song of Solomon",
+        "Song of Songs",
         "Deuteronomy",
         "Lamentations",
         "Philippians",
@@ -96,6 +113,11 @@ BOOK_NAMES: list[str] = sorted(
         "Isaiah",
         "James",
         "Titus",
+        "Baruch",
+        "Judith",
+        "Tobit",
+        "Wisdom",
+        "Sirach",
     ],
     key=len,
     reverse=True,
@@ -142,7 +164,7 @@ def normalize_book_name(line: str) -> str | None:
     s = line.strip()
     for name in BOOK_NAMES:
         if s == name or s.lower() == name.lower():
-            return name
+            return canonical_book(name)
     return None
 
 
@@ -154,8 +176,101 @@ def parse_chapter_line(line: str) -> tuple[str, str] | None:
     ch = m.group("ch")
     for name in BOOK_NAMES:
         if book_part.lower() == name.lower():
-            return name, ch
+            return canonical_book(name), ch
     return None
+
+
+# Typical Catholic Bible sequence (NAB-style OT + deuterocanon placement).
+CATHOLIC_BOOK_ORDER: list[str] = [
+    "Genesis",
+    "Exodus",
+    "Leviticus",
+    "Numbers",
+    "Deuteronomy",
+    "Joshua",
+    "Judges",
+    "Ruth",
+    "1 Samuel",
+    "2 Samuel",
+    "1 Kings",
+    "2 Kings",
+    "1 Chronicles",
+    "2 Chronicles",
+    "Ezra",
+    "Nehemiah",
+    "Tobit",
+    "Judith",
+    "Esther",
+    "1 Maccabees",
+    "2 Maccabees",
+    "Job",
+    "Psalms",
+    "Proverbs",
+    "Ecclesiastes",
+    "Song of Songs",
+    "Wisdom",
+    "Sirach",
+    "Isaiah",
+    "Jeremiah",
+    "Lamentations",
+    "Baruch",
+    "Ezekiel",
+    "Daniel",
+    "Hosea",
+    "Joel",
+    "Amos",
+    "Obadiah",
+    "Jonah",
+    "Micah",
+    "Nahum",
+    "Habakkuk",
+    "Zephaniah",
+    "Haggai",
+    "Zechariah",
+    "Malachi",
+    "Matthew",
+    "Mark",
+    "Luke",
+    "John",
+    "Acts",
+    "Romans",
+    "1 Corinthians",
+    "2 Corinthians",
+    "Galatians",
+    "Ephesians",
+    "Philippians",
+    "Colossians",
+    "1 Thessalonians",
+    "2 Thessalonians",
+    "1 Timothy",
+    "2 Timothy",
+    "Titus",
+    "Philemon",
+    "Hebrews",
+    "James",
+    "1 Peter",
+    "2 Peter",
+    "1 John",
+    "2 John",
+    "3 John",
+    "Jude",
+    "Revelation",
+]
+
+
+def reorder_bible_catholic(bible: dict) -> dict:
+    """Return a new dict with keys in Catholic order; unknown books follow alphabetically."""
+    out: dict = {}
+    for k in CATHOLIC_BOOK_ORDER:
+        if k in bible:
+            out[k] = bible[k]
+    rest = sorted(k for k in bible if k not in out)
+    for k in rest:
+        out[k] = bible[k]
+    return out
+
+
+_JUNK_LINE = re.compile(r"^(AI:|Note:|Transcriber:)\s*$", re.I)
 
 
 def import_docx(docx_path: Path, bible: dict) -> dict:
@@ -163,6 +278,8 @@ def import_docx(docx_path: Path, bible: dict) -> dict:
     current_chapter: str | None = None
 
     for para in iter_docx_lines(docx_path):
+        if _JUNK_LINE.match(para.strip()):
+            continue
         ch = parse_chapter_line(para)
         if ch:
             current_book, current_chapter = ch

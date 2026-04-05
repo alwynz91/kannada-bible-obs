@@ -21,7 +21,7 @@ const bibleReady = (async function loadBible() {
   }
 })();
 
-/** Canonical Protestant order: first prefix match (e.g. "g" → Genesis, not Galatians). */
+/** Catholic Bible order (matches data/bible.json key order after merge). */
 const BOOK_ORDER = [
   "Genesis",
   "Exodus",
@@ -39,15 +39,22 @@ const BOOK_ORDER = [
   "2 Chronicles",
   "Ezra",
   "Nehemiah",
+  "Tobit",
+  "Judith",
   "Esther",
+  "1 Maccabees",
+  "2 Maccabees",
   "Job",
   "Psalms",
   "Proverbs",
   "Ecclesiastes",
   "Song of Songs",
+  "Wisdom",
+  "Sirach",
   "Isaiah",
   "Jeremiah",
   "Lamentations",
+  "Baruch",
   "Ezekiel",
   "Daniel",
   "Hosea",
