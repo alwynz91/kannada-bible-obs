@@ -12,6 +12,14 @@ let state = {
   book: "",
   chapter: "",
   verseNum: "",
+  textColor: "#ffffff",
+  bold: true,
+  italic: false,
+  shadowColor: "#000000",
+  shadowIntensity: "70",
+  borderEnabled: false,
+  borderColor: "#000000",
+  borderWidth: "2",
 };
 
 app.use(express.json());
@@ -32,7 +40,15 @@ app.get("/api/state", (req, res) => {
 app.post("/api/state", (req, res) => {
   const b = req.body;
   if (b.verse !== undefined) state.verse = b.verse;
-  if (b.fontSize !== undefined) state.fontSize = b.fontSize;
+  if (b.fontSize !== undefined) state.fontSize = String(b.fontSize);
+  if (b.textColor !== undefined) state.textColor = String(b.textColor);
+  if (b.bold !== undefined) state.bold = Boolean(b.bold);
+  if (b.italic !== undefined) state.italic = Boolean(b.italic);
+  if (b.shadowColor !== undefined) state.shadowColor = String(b.shadowColor);
+  if (b.shadowIntensity !== undefined) state.shadowIntensity = String(b.shadowIntensity);
+  if (b.borderEnabled !== undefined) state.borderEnabled = Boolean(b.borderEnabled);
+  if (b.borderColor !== undefined) state.borderColor = String(b.borderColor);
+  if (b.borderWidth !== undefined) state.borderWidth = String(b.borderWidth);
   if (b.book && b.chapter != null && b.verseNum != null) {
     state.book = String(b.book);
     state.chapter = String(b.chapter);

@@ -36,19 +36,6 @@
       line-height: 1.45;
       color: #ffffff;
       font-weight: 700;
-      -webkit-text-stroke: 2.5px #000000;
-      paint-order: stroke fill;
-      text-shadow:
-        -2px -2px 0 #000,
-        2px -2px 0 #000,
-        -2px 2px 0 #000,
-        2px 2px 0 #000,
-        -2px 0 0 #000,
-        2px 0 0 #000,
-        0 -2px 0 #000,
-        0 2px 0 #000,
-        0 0 4px rgba(0, 0, 0, 0.95),
-        3px 3px 12px rgba(0, 0, 0, 0.9);
     }
 
     #verseBody .verse-reference {
@@ -56,19 +43,6 @@
       margin-top: 0.5em;
       font-weight: 600;
       color: #ffffff;
-      -webkit-text-stroke: 2px #000000;
-      paint-order: stroke fill;
-      text-shadow:
-        -1.5px -1.5px 0 #000,
-        1.5px -1.5px 0 #000,
-        -1.5px 1.5px 0 #000,
-        1.5px 1.5px 0 #000,
-        -1.5px 0 0 #000,
-        1.5px 0 0 #000,
-        0 -1.5px 0 #000,
-        0 1.5px 0 #000,
-        0 0 3px rgba(0, 0, 0, 0.95),
-        2px 2px 10px rgba(0, 0, 0, 0.9);
     }
   </style>
 </head>
@@ -89,12 +63,73 @@
       return "";
     }
 
-    function renderOverlay(verse, reference, fontSize) {
-      const bodyEl = document.getElementById("verseBody");
+    function hexToRgb(hex) {
+      const raw = String(hex || "").replace("#", "");
+      if (!/^[0-9a-f]{6}$/i.test(raw)) return null;
+      return {
+        r: parseInt(raw.slice(0, 2), 16),
+        g: parseInt(raw.slice(2, 4), 16),
+        b: parseInt(raw.slice(4, 6), 16),
+      };
+    }
+
+    function buildTextShadow(color, intensity) {
+      const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
+      if (amount === 0) return "none";
+
+      const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
+      const solid = color || "#000000";
+      const offset = Math.max(1, Math.round(1 + (amount / 100) * 3));
+      const blur = Math.round(4 + (amount / 100) * 14);
+      const glow = 0.35 + (amount / 100) * 0.65;
+      const soft = 0.4 + (amount / 100) * 0.55;
+
+      return [
+        `-${offset}px -${offset}px 0 ${solid}`,
+        `${offset}px -${offset}px 0 ${solid}`,
+        `-${offset}px ${offset}px 0 ${solid}`,
+        `${offset}px ${offset}px 0 ${solid}`,
+        `-${offset}px 0 0 ${solid}`,
+        `${offset}px 0 0 ${solid}`,
+        `0 -${offset}px 0 ${solid}`,
+        `0 ${offset}px 0 ${solid}`,
+        `0 0 ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${glow})`,
+        `${offset}px ${offset}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${soft})`,
+      ].join(", ");
+    }
+
+    function applyTextAppearance(el, style, fontSize) {
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
-      bodyEl.style.fontSize = size + "px";
+      const textColor = style.textColor || "#ffffff";
+      const shadowColor = style.shadowColor || "#000000";
+      const shadowIntensity = style.shadowIntensity != null ? style.shadowIntensity : "70";
+      const borderWidth = Math.max(1, parseInt(style.borderWidth, 10) || 2);
+
+      el.style.fontSize = size + "px";
+      el.style.color = textColor;
+      el.style.fontWeight = style.bold ? "700" : "400";
+      el.style.fontStyle = style.italic ? "italic" : "normal";
+      el.style.textShadow = buildTextShadow(shadowColor, shadowIntensity);
+      el.style.webkitTextStroke = "";
+      el.style.paintOrder = "";
+
+      if (style.borderEnabled) {
+        el.style.border = `${borderWidth}px solid ${style.borderColor || "#000000"}`;
+        el.style.padding = "10px 18px";
+        el.style.borderRadius = "6px";
+      } else {
+        el.style.border = "none";
+        el.style.padding = "0";
+        el.style.borderRadius = "0";
+      }
+    }
+
+    function renderOverlay(verse, reference, style) {
+      const bodyEl = document.getElementById("verseBody");
+      const fontSize = style.fontSize || "60";
 
       bodyEl.replaceChildren();
+      applyTextAppearance(bodyEl, style, fontSize);
 
       if (!verse) {
         bodyEl.textContent = "Select a verse in the dock";
@@ -107,7 +142,8 @@
         const refEl = document.createElement("span");
         refEl.className = "verse-reference";
         refEl.textContent = reference;
-        refEl.style.fontSize = Math.max(10, size - 3) + "px";
+        const refSize = Math.max(10, (parseInt(fontSize, 10) || 60) - 3);
+        applyTextAppearance(refEl, style, refSize);
         bodyEl.appendChild(refEl);
       }
     }
@@ -120,7 +156,7 @@
         const data = await res.json();
         const verse = data.verse || "";
         const reference = buildReference(data);
-        renderOverlay(verse, reference, data.fontSize || "60");
+        renderOverlay(verse, reference, data);
       } catch (e) {
         const bodyEl = document.getElementById("verseBody");
         bodyEl.textContent = "Connecting...";

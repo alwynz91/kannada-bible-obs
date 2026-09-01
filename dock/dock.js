@@ -160,8 +160,74 @@ function escapeHtml(s) {
 const searchInput = document.getElementById("searchInput");
 const verseList = document.getElementById("verseList");
 const fontSizeSlider = document.getElementById("fontSize");
+const fontSizeVal = document.getElementById("fontSizeVal");
+const textColorInput = document.getElementById("textColor");
+const textBoldCheckbox = document.getElementById("textBold");
+const textItalicCheckbox = document.getElementById("textItalic");
+const shadowColorInput = document.getElementById("shadowColor");
+const shadowIntensitySlider = document.getElementById("shadowIntensity");
+const shadowIntensityVal = document.getElementById("shadowIntensityVal");
+const borderEnabledCheckbox = document.getElementById("borderEnabled");
+const borderColorInput = document.getElementById("borderColor");
+const borderWidthSlider = document.getElementById("borderWidth");
+const borderWidthVal = document.getElementById("borderWidthVal");
 const searchMirror = document.getElementById("searchMirror");
 const dockToast = document.getElementById("dockToast");
+
+function getDisplayStylePayload() {
+  return {
+    fontSize: fontSizeSlider.value,
+    textColor: textColorInput.value,
+    bold: textBoldCheckbox.checked,
+    italic: textItalicCheckbox.checked,
+    shadowColor: shadowColorInput.value,
+    shadowIntensity: shadowIntensitySlider.value,
+    borderEnabled: borderEnabledCheckbox.checked,
+    borderColor: borderColorInput.value,
+    borderWidth: borderWidthSlider.value,
+  };
+}
+
+function syncStyleValueLabels() {
+  if (fontSizeVal) fontSizeVal.textContent = fontSizeSlider.value;
+  if (shadowIntensityVal) shadowIntensityVal.textContent = shadowIntensitySlider.value;
+  if (borderWidthVal) borderWidthVal.textContent = borderWidthSlider.value;
+}
+
+function applyDisplayStyleToControls(data) {
+  if (!data) return;
+  if (data.fontSize != null) fontSizeSlider.value = data.fontSize;
+  if (data.textColor) textColorInput.value = data.textColor;
+  if (data.bold != null) textBoldCheckbox.checked = Boolean(data.bold);
+  if (data.italic != null) textItalicCheckbox.checked = Boolean(data.italic);
+  if (data.shadowColor) shadowColorInput.value = data.shadowColor;
+  if (data.shadowIntensity != null) shadowIntensitySlider.value = data.shadowIntensity;
+  if (data.borderEnabled != null) borderEnabledCheckbox.checked = Boolean(data.borderEnabled);
+  if (data.borderColor) borderColorInput.value = data.borderColor;
+  if (data.borderWidth != null) borderWidthSlider.value = data.borderWidth;
+  syncStyleValueLabels();
+}
+
+function postDisplayStyle() {
+  syncStyleValueLabels();
+  fetch("/api/state", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify(getDisplayStylePayload()),
+  });
+}
+
+async function loadDisplayStyleFromServer() {
+  try {
+    const res = await fetch("/api/state", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    applyDisplayStyleToControls(data);
+  } catch (_) {
+    /* offline or server not running */
+  }
+}
 
 function syncSearchMirrorScroll() {
   if (searchMirror && searchInput) searchMirror.scrollLeft = searchInput.scrollLeft;
@@ -282,15 +348,17 @@ searchInput.addEventListener("keyup", (e) => {
   if (isStandardEditShortcut(e)) updateInlineMirror();
 });
 
-fontSizeSlider.addEventListener("input", () => {
-  const size = fontSizeSlider.value;
-  fetch("/api/state", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    body: JSON.stringify({ fontSize: size }),
-  });
-});
+fontSizeSlider.addEventListener("input", postDisplayStyle);
+textColorInput.addEventListener("input", postDisplayStyle);
+textBoldCheckbox.addEventListener("change", postDisplayStyle);
+textItalicCheckbox.addEventListener("change", postDisplayStyle);
+shadowColorInput.addEventListener("input", postDisplayStyle);
+shadowIntensitySlider.addEventListener("input", postDisplayStyle);
+borderEnabledCheckbox.addEventListener("change", postDisplayStyle);
+borderColorInput.addEventListener("input", postDisplayStyle);
+borderWidthSlider.addEventListener("input", postDisplayStyle);
+
+loadDisplayStyleFromServer();
 
 function isTypableField(el) {
   if (!el || !el.tagName) return false;
