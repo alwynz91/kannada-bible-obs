@@ -23,48 +23,63 @@
       />
     </div>
 
-    <div class="text-style-panel">
-      <p class="panel-title">Text appearance</p>
+    <div class="font-size-row">
+      <label for="fontSize">Font size</label>
+      <input type="range" id="fontSize" min="20" max="120" value="60">
+      <span id="fontSizeVal" class="style-value">60</span>
+    </div>
 
-      <div class="style-row">
-        <label for="fontSize">Font size</label>
-        <input type="range" id="fontSize" min="20" max="120" value="60">
-        <span id="fontSizeVal" class="style-value">60</span>
-      </div>
+    <div class="text-style-panel" id="textStylePanel">
+      <button
+        type="button"
+        class="text-style-toggle"
+        id="textStyleToggle"
+        aria-expanded="false"
+        aria-controls="textStyleBody"
+      >
+        <span class="text-style-toggle-label">Text appearance</span>
+        <span class="toggle-chevron" aria-hidden="true">▾</span>
+      </button>
 
-      <div class="style-row style-row-inline">
-        <label for="textColor">Text color</label>
-        <input type="color" id="textColor" value="#ffffff">
-      </div>
+      <div class="text-style-body" id="textStyleBody" hidden>
+        <div class="style-row style-row-inline">
+          <label for="textColor">Text color</label>
+          <input type="color" id="textColor" value="#ffffff">
+        </div>
 
-      <div class="style-row style-toggles">
-        <label class="toggle-label">
-          <input type="checkbox" id="textBold" checked>
-          Bold
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="textItalic">
-          Italic
-        </label>
-      </div>
+        <div class="style-row style-toggles">
+          <label class="toggle-label">
+            <input type="checkbox" id="textBold" checked>
+            Bold
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="textItalic">
+            Italic
+          </label>
+        </div>
 
-      <div class="style-row style-row-shadow">
-        <label for="shadowColor">Shadow color</label>
-        <input type="color" id="shadowColor" value="#000000">
-        <label for="shadowIntensity" class="sub-label">Intensity</label>
-        <input type="range" id="shadowIntensity" min="0" max="100" value="70">
-        <span id="shadowIntensityVal" class="style-value">70</span>
-      </div>
+        <div class="style-row style-row-shadow">
+          <label for="shadowColor">Shadow color</label>
+          <input type="color" id="shadowColor" value="#000000">
+          <label for="shadowIntensity" class="sub-label">Intensity</label>
+          <input type="range" id="shadowIntensity" min="0" max="100" value="70">
+          <span id="shadowIntensityVal" class="style-value">70</span>
+        </div>
 
-      <div class="style-row style-row-border">
-        <label class="toggle-label">
-          <input type="checkbox" id="borderEnabled">
-          Border
-        </label>
-        <input type="color" id="borderColor" value="#000000" title="Border color">
-        <label for="borderWidth" class="sub-label">Width</label>
-        <input type="range" id="borderWidth" min="1" max="12" value="2">
-        <span id="borderWidthVal" class="style-value">2</span>
+        <div class="style-row style-row-border">
+          <label class="toggle-label">
+            <input type="checkbox" id="borderEnabled">
+            Border
+          </label>
+          <input type="color" id="borderColor" value="#000000" title="Border color">
+          <label for="borderWidth" class="sub-label">Width</label>
+          <input type="range" id="borderWidth" min="1" max="12" value="2">
+          <span id="borderWidthVal" class="style-value">2</span>
+        </div>
+
+        <button type="button" class="style-reset-btn" id="resetStyleDefaults">
+          Reset to default colors
+        </button>
       </div>
     </div>
 

@@ -171,8 +171,25 @@ const borderEnabledCheckbox = document.getElementById("borderEnabled");
 const borderColorInput = document.getElementById("borderColor");
 const borderWidthSlider = document.getElementById("borderWidth");
 const borderWidthVal = document.getElementById("borderWidthVal");
+const textStylePanel = document.getElementById("textStylePanel");
+const textStyleToggle = document.getElementById("textStyleToggle");
+const textStyleBody = document.getElementById("textStyleBody");
+const resetStyleDefaultsBtn = document.getElementById("resetStyleDefaults");
 const searchMirror = document.getElementById("searchMirror");
 const dockToast = document.getElementById("dockToast");
+
+const DEFAULT_DISPLAY_STYLE = {
+  textColor: "#ffffff",
+  bold: true,
+  italic: false,
+  shadowColor: "#000000",
+  shadowIntensity: "70",
+  borderEnabled: false,
+  borderColor: "#000000",
+  borderWidth: "2",
+};
+
+const TEXT_STYLE_PANEL_KEY = "dockTextStyleOpen";
 
 function getDisplayStylePayload() {
   return {
@@ -227,6 +244,34 @@ async function loadDisplayStyleFromServer() {
   } catch (_) {
     /* offline or server not running */
   }
+}
+
+function setTextStylePanelOpen(open) {
+  if (!textStylePanel || !textStyleToggle || !textStyleBody) return;
+  textStylePanel.classList.toggle("is-open", open);
+  textStyleToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  textStyleBody.hidden = !open;
+  try {
+    localStorage.setItem(TEXT_STYLE_PANEL_KEY, open ? "1" : "0");
+  } catch (_) {
+    /* private browsing */
+  }
+}
+
+function loadTextStylePanelState() {
+  let open = false;
+  try {
+    open = localStorage.getItem(TEXT_STYLE_PANEL_KEY) === "1";
+  } catch (_) {
+    /* ignore */
+  }
+  setTextStylePanelOpen(open);
+}
+
+function resetStyleToDefaults() {
+  applyDisplayStyleToControls(DEFAULT_DISPLAY_STYLE);
+  postDisplayStyle();
+  showToast("Restored default colors & style");
 }
 
 function syncSearchMirrorScroll() {
@@ -357,7 +402,14 @@ shadowIntensitySlider.addEventListener("input", postDisplayStyle);
 borderEnabledCheckbox.addEventListener("change", postDisplayStyle);
 borderColorInput.addEventListener("input", postDisplayStyle);
 borderWidthSlider.addEventListener("input", postDisplayStyle);
+resetStyleDefaultsBtn.addEventListener("click", resetStyleToDefaults);
 
+textStyleToggle.addEventListener("click", () => {
+  const willOpen = textStyleBody.hidden;
+  setTextStylePanelOpen(willOpen);
+});
+
+loadTextStylePanelState();
 loadDisplayStyleFromServer();
 
 function isTypableField(el) {
