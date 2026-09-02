@@ -98,24 +98,21 @@
       ].join(", ");
     }
 
-    function buildDropShadow(color, intensity, enabled) {
-      if (!enabled) return "";
+    function buildDropShadowFilter(color, intensity, enabled, fontSize) {
+      if (!enabled) return "none";
       const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      if (amount === 0) return "";
+      if (amount === 0) return "none";
 
       const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
-      const offset = Math.max(2, Math.round(2 + (amount / 100) * 10));
-      const blur = Math.round(3 + (amount / 100) * 16);
-      const alpha = 0.45 + (amount / 100) * 0.5;
-      return `${offset}px ${offset}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+      const size = Math.max(12, parseInt(fontSize, 10) || 60);
+      const scale = size / 60;
+      const offset = Math.max(4, Math.round((4 + (amount / 100) * 16) * scale));
+      const blur = Math.round((8 + (amount / 100) * 28) * scale);
+      const alpha = 0.65 + (amount / 100) * 0.35;
+      return `drop-shadow(${offset}px ${offset}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha}))`;
     }
 
-    function combineTextShadows(outline, drop) {
-      const parts = [outline, drop].filter((s) => s && s !== "none");
-      return parts.length ? parts.join(", ") : "none";
-    }
-
-    function applyTextAppearance(el, style, fontSize) {
+    function applyTextAppearance(el, style, fontSize, options) {
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
       const textColor = style.textColor || "#ffffff";
       const shadowColor = style.shadowColor || "#000000";
@@ -126,16 +123,18 @@
       el.style.color = textColor;
       el.style.fontWeight = style.bold ? "700" : "400";
       el.style.fontStyle = style.italic ? "italic" : "normal";
-      el.style.textShadow = combineTextShadows(
-        buildTextShadow(shadowColor, shadowIntensity),
-        buildDropShadow(
-          style.dropShadowColor || "#000000",
-          style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
-          Boolean(style.dropShadowEnabled)
-        )
-      );
+      el.style.textShadow = buildTextShadow(shadowColor, shadowIntensity);
       el.style.webkitTextStroke = "";
       el.style.paintOrder = "";
+
+      if (options && options.useDropShadowFilter) {
+        el.style.filter = buildDropShadowFilter(
+          style.dropShadowColor || "#000000",
+          style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
+          Boolean(style.dropShadowEnabled),
+          size
+        );
+      }
 
       if (style.borderEnabled) {
         el.style.border = `${borderWidth}px solid ${style.borderColor || "#000000"}`;
@@ -153,7 +152,7 @@
       const fontSize = style.fontSize || "60";
 
       bodyEl.replaceChildren();
-      applyTextAppearance(bodyEl, style, fontSize);
+      applyTextAppearance(bodyEl, style, fontSize, { useDropShadowFilter: true });
 
       if (!verse) {
         bodyEl.textContent = "Select a verse in the dock";
