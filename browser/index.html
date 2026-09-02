@@ -6,7 +6,6 @@
   <title>Kannada Bible Output</title>
 
   <style>
-    /* OBS/CEF often treats 100vh + flex oddly; fixed bottom is reliable */
     html,
     body {
       margin: 0;
@@ -15,7 +14,7 @@
       height: 100%;
       background: transparent;
       font-family: "Noto Sans Kannada", sans-serif;
-      overflow: hidden;
+      overflow: visible;
     }
 
     #verseBox {
@@ -24,9 +23,10 @@
       right: 0;
       bottom: 0;
       width: 100%;
-      padding: 24px 50px 52px;
+      padding: 24px 50px 80px;
       box-sizing: border-box;
       text-align: center;
+      overflow: visible;
     }
 
     #verseBody {
@@ -34,15 +34,16 @@
       max-width: 95%;
       text-align: center;
       line-height: 1.45;
-      color: #ffffff;
-      font-weight: 700;
+      overflow: visible;
+    }
+
+    #verseBody .verse-text,
+    #verseBody .verse-reference {
+      display: block;
     }
 
     #verseBody .verse-reference {
-      display: block;
       margin-top: 0.5em;
-      font-weight: 600;
-      color: #ffffff;
     }
   </style>
 </head>
@@ -53,6 +54,8 @@
   </div>
 
   <script>
+    let lastStateKey = "";
+
     function buildReference(data) {
       let ref = (data.reference || "").trim();
       if (ref) return ref;
@@ -61,6 +64,10 @@
         return `${book} ${chapter}:${verseNum}`;
       }
       return "";
+    }
+
+    function isTruthyFlag(v) {
+      return v === true || v === "true" || v === 1 || v === "1";
     }
 
     function hexToRgb(hex) {
@@ -73,9 +80,9 @@
       };
     }
 
-    function buildTextShadow(color, intensity) {
+    function buildOutlineShadow(color, intensity) {
       const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      if (amount === 0) return "none";
+      if (amount === 0) return "";
 
       const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
       const solid = color || "#000000";
@@ -98,21 +105,31 @@
       ].join(", ");
     }
 
-    function buildDropShadowFilter(color, intensity, enabled, fontSize) {
-      if (!enabled) return "none";
+    function buildDropShadow(color, intensity, enabled, fontSize) {
+      if (!isTruthyFlag(enabled)) return "";
       const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      if (amount === 0) return "none";
+      if (amount === 0) return "";
 
       const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
+      const solid = color || "#000000";
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
-      const scale = size / 60;
-      const offset = Math.max(4, Math.round((4 + (amount / 100) * 16) * scale));
-      const blur = Math.round((8 + (amount / 100) * 28) * scale);
-      const alpha = 0.65 + (amount / 100) * 0.35;
-      return `drop-shadow(${offset}px ${offset}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha}))`;
+      const ox = Math.round(size * (0.1 + (amount / 100) * 0.25));
+      const oy = Math.round(size * (0.1 + (amount / 100) * 0.25));
+      const blur = Math.round(size * (0.08 + (amount / 100) * 0.22));
+
+      return [
+        `${ox}px ${oy}px 0 ${solid}`,
+        `${ox}px ${oy}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.95)`,
+        `${Math.round(ox * 1.35)}px ${Math.round(oy * 1.35)}px ${Math.round(blur * 1.5)}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`,
+      ].join(", ");
     }
 
-    function applyTextAppearance(el, style, fontSize, options) {
+    function combineShadows(...layers) {
+      const parts = layers.filter((s) => s && s !== "none");
+      return parts.length ? parts.join(", ") : "none";
+    }
+
+    function applyTextAppearance(el, style, fontSize) {
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
       const textColor = style.textColor || "#ffffff";
       const shadowColor = style.shadowColor || "#000000";
@@ -120,30 +137,34 @@
       const borderWidth = Math.max(1, parseInt(style.borderWidth, 10) || 2);
 
       el.style.fontSize = size + "px";
-      el.style.color = textColor;
-      el.style.fontWeight = style.bold ? "700" : "400";
+      el.style.setProperty("color", textColor, "important");
+      el.style.setProperty("-webkit-text-fill-color", textColor, "important");
+      el.style.fontWeight = style.bold !== false ? "700" : "400";
       el.style.fontStyle = style.italic ? "italic" : "normal";
-      el.style.textShadow = buildTextShadow(shadowColor, shadowIntensity);
-      el.style.webkitTextStroke = "";
-      el.style.paintOrder = "";
-
-      if (options && options.useDropShadowFilter) {
-        el.style.filter = buildDropShadowFilter(
+      el.style.textShadow = combineShadows(
+        buildOutlineShadow(shadowColor, shadowIntensity),
+        buildDropShadow(
           style.dropShadowColor || "#000000",
           style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
-          Boolean(style.dropShadowEnabled),
+          style.dropShadowEnabled,
           size
-        );
-      }
+        )
+      );
+      el.style.filter = "none";
+      el.style.webkitFilter = "none";
+      el.style.webkitTextStroke = "initial";
+      el.style.paintOrder = "initial";
 
       if (style.borderEnabled) {
         el.style.border = `${borderWidth}px solid ${style.borderColor || "#000000"}`;
         el.style.padding = "10px 18px";
         el.style.borderRadius = "6px";
+        el.style.display = "inline-block";
       } else {
         el.style.border = "none";
         el.style.padding = "0";
         el.style.borderRadius = "0";
+        el.style.display = "block";
       }
     }
 
@@ -152,14 +173,21 @@
       const fontSize = style.fontSize || "60";
 
       bodyEl.replaceChildren();
-      applyTextAppearance(bodyEl, style, fontSize, { useDropShadowFilter: true });
 
       if (!verse) {
-        bodyEl.textContent = "Select a verse in the dock";
+        const placeholder = document.createElement("span");
+        placeholder.className = "verse-text";
+        placeholder.textContent = "Select a verse in the dock";
+        applyTextAppearance(placeholder, style, fontSize);
+        bodyEl.appendChild(placeholder);
         return;
       }
 
-      bodyEl.appendChild(document.createTextNode(verse));
+      const textSpan = document.createElement("span");
+      textSpan.className = "verse-text";
+      textSpan.textContent = verse;
+      applyTextAppearance(textSpan, style, fontSize);
+      bodyEl.appendChild(textSpan);
 
       if (reference) {
         const refEl = document.createElement("span");
@@ -171,18 +199,42 @@
       }
     }
 
+    function stateKey(data) {
+      return JSON.stringify({
+        verse: data.verse || "",
+        reference: buildReference(data),
+        fontSize: data.fontSize || "60",
+        textColor: data.textColor || "#ffffff",
+        bold: data.bold !== false,
+        italic: Boolean(data.italic),
+        shadowColor: data.shadowColor || "#000000",
+        shadowIntensity: data.shadowIntensity != null ? String(data.shadowIntensity) : "70",
+        dropShadowEnabled: isTruthyFlag(data.dropShadowEnabled),
+        dropShadowColor: data.dropShadowColor || "#000000",
+        dropShadowIntensity: data.dropShadowIntensity != null ? String(data.dropShadowIntensity) : "50",
+        borderEnabled: Boolean(data.borderEnabled),
+        borderColor: data.borderColor || "#000000",
+        borderWidth: data.borderWidth != null ? String(data.borderWidth) : "2",
+      });
+    }
+
     async function updateVerse() {
       try {
         const res = await fetch("/api/state?_=" + Date.now(), {
           cache: "no-store",
         });
         const data = await res.json();
+        const key = stateKey(data);
+        if (key === lastStateKey) return;
+        lastStateKey = key;
+
         const verse = data.verse || "";
         const reference = buildReference(data);
         renderOverlay(verse, reference, data);
       } catch (e) {
         const bodyEl = document.getElementById("verseBody");
         bodyEl.textContent = "Connecting...";
+        lastStateKey = "";
       }
     }
 
