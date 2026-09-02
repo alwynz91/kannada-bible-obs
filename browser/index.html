@@ -37,34 +37,13 @@
       overflow: visible;
     }
 
-    .verse-block {
-      position: relative;
-    }
-
-    .verse-block-verse {
-      display: inline-block;
-    }
-
-    .verse-block-ref {
-      display: block;
-      margin-top: 0.5em;
-    }
-
-    .verse-drop {
-      position: absolute;
-      left: 0;
-      top: 0;
-      z-index: 0;
-      pointer-events: none;
-      white-space: pre-wrap;
-    }
-
     .verse-text,
     .verse-reference {
-      position: relative;
-      z-index: 1;
       display: block;
-      white-space: pre-wrap;
+    }
+
+    .verse-reference {
+      margin-top: 0.5em;
     }
   </style>
 </head>
@@ -91,11 +70,29 @@
       return v === true || v === "true" || v === 1 || v === "1";
     }
 
-    function dropShadowOffset(fontSize, intensity) {
-      const size = Math.max(12, parseInt(fontSize, 10) || 60);
+    function hexToRgb(hex) {
+      const raw = String(hex || "").replace("#", "");
+      if (!/^[0-9a-f]{6}$/i.test(raw)) return null;
+      return {
+        r: parseInt(raw.slice(0, 2), 16),
+        g: parseInt(raw.slice(2, 4), 16),
+        b: parseInt(raw.slice(4, 6), 16),
+      };
+    }
+
+    function buildDropShadowFilter(color, intensity, enabled, fontSize) {
+      if (!isTruthyFlag(enabled)) return "none";
       const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      const px = Math.max(3, Math.round(size * (0.07 + (amount / 100) * 0.2)));
-      return { x: px, y: px };
+      if (amount === 0) return "none";
+
+      const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
+      const size = Math.max(12, parseInt(fontSize, 10) || 60);
+      const scale = size / 60;
+      const x = Math.max(2, Math.round((2 + (amount / 100) * 12) * scale));
+      const y = Math.max(2, Math.round((2 + (amount / 100) * 12) * scale));
+      const blur = Math.round((4 + (amount / 100) * 18) * scale);
+      const alpha = 0.55 + (amount / 100) * 0.45;
+      return `drop-shadow(${x}px ${y}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha}))`;
     }
 
     function applyOutline(el, color, intensity) {
@@ -116,14 +113,21 @@
       const outlineColor = style.shadowColor || "#000000";
       const outlineWidth = style.shadowIntensity != null ? style.shadowIntensity : "70";
       const borderWidth = Math.max(1, parseInt(style.borderWidth, 10) || 2);
+      const dropFilter = buildDropShadowFilter(
+        style.dropShadowColor || "#000000",
+        style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
+        style.dropShadowEnabled,
+        size
+      );
 
       el.style.fontSize = size + "px";
-      el.style.setProperty("color", textColor, "important");
-      el.style.setProperty("-webkit-text-fill-color", textColor, "important");
+      el.style.color = textColor;
       el.style.fontWeight = style.bold !== false ? "700" : "400";
       el.style.fontStyle = style.italic ? "italic" : "normal";
       el.style.textShadow = "none";
       applyOutline(el, outlineColor, outlineWidth);
+      el.style.filter = dropFilter;
+      el.style.webkitFilter = dropFilter;
 
       if (style.borderEnabled) {
         el.style.border = `${borderWidth}px solid ${style.borderColor || "#000000"}`;
@@ -137,55 +141,25 @@
       }
     }
 
-    function applyDropLayer(el, style, fontSize) {
-      const size = Math.max(12, parseInt(fontSize, 10) || 60);
-      const intensity = style.dropShadowIntensity != null ? style.dropShadowIntensity : "50";
-      const { x, y } = dropShadowOffset(size, intensity);
-      el.style.fontSize = size + "px";
-      el.style.fontWeight = style.bold !== false ? "700" : "400";
-      el.style.fontStyle = style.italic ? "italic" : "normal";
-      el.style.color = style.dropShadowColor || "#000000";
-      el.style.setProperty("-webkit-text-fill-color", style.dropShadowColor || "#000000", "important");
-      el.style.webkitTextStroke = "";
-      el.style.paintOrder = "";
-      el.style.transform = `translate(${x}px, ${y}px)`;
-      el.style.opacity = String(0.55 + (Math.min(100, parseInt(intensity, 10) || 0) / 100) * 0.45);
-    }
-
-    function createTextBlock(text, style, fontSize, kind) {
-      const block = document.createElement("span");
-      block.className = "verse-block verse-block-" + kind;
-
-      if (isTruthyFlag(style.dropShadowEnabled)) {
-        const drop = document.createElement("span");
-        drop.className = "verse-drop";
-        drop.setAttribute("aria-hidden", "true");
-        drop.textContent = text;
-        applyDropLayer(drop, style, fontSize);
-        block.appendChild(drop);
-      }
-
-      const main = document.createElement("span");
-      main.className = kind === "ref" ? "verse-reference" : "verse-text";
-      main.textContent = text;
-      applyTextAppearance(main, style, fontSize);
-      block.appendChild(main);
-
-      return block;
-    }
-
     function renderOverlay(verse, reference, style) {
       const bodyEl = document.getElementById("verseBody");
       const fontSize = style.fontSize || "60";
 
       bodyEl.replaceChildren();
 
-      const message = verse || "Select a verse in the dock";
-      bodyEl.appendChild(createTextBlock(message, style, fontSize, "verse"));
+      const textSpan = document.createElement("span");
+      textSpan.className = "verse-text";
+      textSpan.textContent = verse || "Select a verse in the dock";
+      applyTextAppearance(textSpan, style, fontSize);
+      bodyEl.appendChild(textSpan);
 
       if (verse && reference) {
+        const refEl = document.createElement("span");
+        refEl.className = "verse-reference";
+        refEl.textContent = reference;
         const refSize = Math.max(10, (parseInt(fontSize, 10) || 60) - 3);
-        bodyEl.appendChild(createTextBlock(reference, style, refSize, "ref"));
+        applyTextAppearance(refEl, style, refSize);
+        bodyEl.appendChild(refEl);
       }
     }
 
@@ -210,14 +184,11 @@
 
     async function updateVerse() {
       try {
-        const res = await fetch("/api/state?_=" + Date.now(), {
-          cache: "no-store",
-        });
+        const res = await fetch("/api/state?_=" + Date.now(), { cache: "no-store" });
         const data = await res.json();
         const key = stateKey(data);
         if (key === lastStateKey) return;
         lastStateKey = key;
-
         renderOverlay(data.verse || "", buildReference(data), data);
       } catch (e) {
         document.getElementById("verseBody").textContent = "Connecting...";
@@ -225,10 +196,12 @@
       }
     }
 
-    // ponytail: self-check — fails if offset math breaks (upgrade: run with ?selfcheck=1)
+    // ponytail: self-check — upgrade path: ?selfcheck=1 in browser URL
     if (new URLSearchParams(location.search).get("selfcheck") === "1") {
-      const o = dropShadowOffset(60, 100);
-      console.assert(o.x >= 10 && o.y >= 10, "dropShadowOffset", o);
+      console.assert(
+        buildDropShadowFilter("#ff0000", "50", true, "60") !== "none",
+        "drop shadow filter"
+      );
     }
 
     updateVerse();
