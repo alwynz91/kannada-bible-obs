@@ -68,6 +68,17 @@
 
         <div class="style-row style-row-border">
           <label class="toggle-label">
+            <input type="checkbox" id="dropShadowEnabled">
+            Drop shadow
+          </label>
+          <input type="color" id="dropShadowColor" value="#000000" title="Drop shadow color">
+          <label for="dropShadowIntensity" class="sub-label">Depth</label>
+          <input type="range" id="dropShadowIntensity" min="0" max="100" value="50">
+          <span id="dropShadowIntensityVal" class="style-value">50</span>
+        </div>
+
+        <div class="style-row style-row-border">
+          <label class="toggle-label">
             <input type="checkbox" id="borderEnabled">
             Border
           </label>

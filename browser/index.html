@@ -98,6 +98,23 @@
       ].join(", ");
     }
 
+    function buildDropShadow(color, intensity, enabled) {
+      if (!enabled) return "";
+      const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
+      if (amount === 0) return "";
+
+      const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
+      const offset = Math.max(2, Math.round(2 + (amount / 100) * 10));
+      const blur = Math.round(3 + (amount / 100) * 16);
+      const alpha = 0.45 + (amount / 100) * 0.5;
+      return `${offset}px ${offset}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    }
+
+    function combineTextShadows(outline, drop) {
+      const parts = [outline, drop].filter((s) => s && s !== "none");
+      return parts.length ? parts.join(", ") : "none";
+    }
+
     function applyTextAppearance(el, style, fontSize) {
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
       const textColor = style.textColor || "#ffffff";
@@ -109,7 +126,14 @@
       el.style.color = textColor;
       el.style.fontWeight = style.bold ? "700" : "400";
       el.style.fontStyle = style.italic ? "italic" : "normal";
-      el.style.textShadow = buildTextShadow(shadowColor, shadowIntensity);
+      el.style.textShadow = combineTextShadows(
+        buildTextShadow(shadowColor, shadowIntensity),
+        buildDropShadow(
+          style.dropShadowColor || "#000000",
+          style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
+          Boolean(style.dropShadowEnabled)
+        )
+      );
       el.style.webkitTextStroke = "";
       el.style.paintOrder = "";
 

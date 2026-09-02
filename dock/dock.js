@@ -167,6 +167,10 @@ const textItalicCheckbox = document.getElementById("textItalic");
 const shadowColorInput = document.getElementById("shadowColor");
 const shadowIntensitySlider = document.getElementById("shadowIntensity");
 const shadowIntensityVal = document.getElementById("shadowIntensityVal");
+const dropShadowEnabledCheckbox = document.getElementById("dropShadowEnabled");
+const dropShadowColorInput = document.getElementById("dropShadowColor");
+const dropShadowIntensitySlider = document.getElementById("dropShadowIntensity");
+const dropShadowIntensityVal = document.getElementById("dropShadowIntensityVal");
 const borderEnabledCheckbox = document.getElementById("borderEnabled");
 const borderColorInput = document.getElementById("borderColor");
 const borderWidthSlider = document.getElementById("borderWidth");
@@ -184,6 +188,9 @@ const DEFAULT_DISPLAY_STYLE = {
   italic: false,
   shadowColor: "#000000",
   shadowIntensity: "70",
+  dropShadowEnabled: false,
+  dropShadowColor: "#000000",
+  dropShadowIntensity: "50",
   borderEnabled: false,
   borderColor: "#000000",
   borderWidth: "2",
@@ -199,6 +206,9 @@ function getDisplayStylePayload() {
     italic: textItalicCheckbox.checked,
     shadowColor: shadowColorInput.value,
     shadowIntensity: shadowIntensitySlider.value,
+    dropShadowEnabled: dropShadowEnabledCheckbox.checked,
+    dropShadowColor: dropShadowColorInput.value,
+    dropShadowIntensity: dropShadowIntensitySlider.value,
     borderEnabled: borderEnabledCheckbox.checked,
     borderColor: borderColorInput.value,
     borderWidth: borderWidthSlider.value,
@@ -208,6 +218,7 @@ function getDisplayStylePayload() {
 function syncStyleValueLabels() {
   if (fontSizeVal) fontSizeVal.textContent = fontSizeSlider.value;
   if (shadowIntensityVal) shadowIntensityVal.textContent = shadowIntensitySlider.value;
+  if (dropShadowIntensityVal) dropShadowIntensityVal.textContent = dropShadowIntensitySlider.value;
   if (borderWidthVal) borderWidthVal.textContent = borderWidthSlider.value;
 }
 
@@ -219,6 +230,9 @@ function applyDisplayStyleToControls(data) {
   if (data.italic != null) textItalicCheckbox.checked = Boolean(data.italic);
   if (data.shadowColor) shadowColorInput.value = data.shadowColor;
   if (data.shadowIntensity != null) shadowIntensitySlider.value = data.shadowIntensity;
+  if (data.dropShadowEnabled != null) dropShadowEnabledCheckbox.checked = Boolean(data.dropShadowEnabled);
+  if (data.dropShadowColor) dropShadowColorInput.value = data.dropShadowColor;
+  if (data.dropShadowIntensity != null) dropShadowIntensitySlider.value = data.dropShadowIntensity;
   if (data.borderEnabled != null) borderEnabledCheckbox.checked = Boolean(data.borderEnabled);
   if (data.borderColor) borderColorInput.value = data.borderColor;
   if (data.borderWidth != null) borderWidthSlider.value = data.borderWidth;
@@ -399,6 +413,9 @@ textBoldCheckbox.addEventListener("change", postDisplayStyle);
 textItalicCheckbox.addEventListener("change", postDisplayStyle);
 shadowColorInput.addEventListener("input", postDisplayStyle);
 shadowIntensitySlider.addEventListener("input", postDisplayStyle);
+dropShadowEnabledCheckbox.addEventListener("change", postDisplayStyle);
+dropShadowColorInput.addEventListener("input", postDisplayStyle);
+dropShadowIntensitySlider.addEventListener("input", postDisplayStyle);
 borderEnabledCheckbox.addEventListener("change", postDisplayStyle);
 borderColorInput.addEventListener("input", postDisplayStyle);
 borderWidthSlider.addEventListener("input", postDisplayStyle);
