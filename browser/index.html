@@ -37,13 +37,34 @@
       overflow: visible;
     }
 
-    #verseBody .verse-text,
-    #verseBody .verse-reference {
-      display: block;
+    .verse-block {
+      position: relative;
     }
 
-    #verseBody .verse-reference {
+    .verse-block-verse {
+      display: inline-block;
+    }
+
+    .verse-block-ref {
+      display: block;
       margin-top: 0.5em;
+    }
+
+    .verse-drop {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 0;
+      pointer-events: none;
+      white-space: pre-wrap;
+    }
+
+    .verse-text,
+    .verse-reference {
+      position: relative;
+      z-index: 1;
+      display: block;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -70,14 +91,11 @@
       return v === true || v === "true" || v === 1 || v === "1";
     }
 
-    function hexToRgb(hex) {
-      const raw = String(hex || "").replace("#", "");
-      if (!/^[0-9a-f]{6}$/i.test(raw)) return null;
-      return {
-        r: parseInt(raw.slice(0, 2), 16),
-        g: parseInt(raw.slice(2, 4), 16),
-        b: parseInt(raw.slice(4, 6), 16),
-      };
+    function dropShadowOffset(fontSize, intensity) {
+      const size = Math.max(12, parseInt(fontSize, 10) || 60);
+      const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
+      const px = Math.max(3, Math.round(size * (0.07 + (amount / 100) * 0.2)));
+      return { x: px, y: px };
     }
 
     function applyOutline(el, color, intensity) {
@@ -92,25 +110,6 @@
       el.style.paintOrder = "stroke fill";
     }
 
-    function buildDropShadow(color, intensity, enabled, fontSize) {
-      if (!isTruthyFlag(enabled)) return "none";
-      const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      if (amount === 0) return "none";
-
-      const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
-      const solid = color || "#000000";
-      const size = Math.max(12, parseInt(fontSize, 10) || 60);
-      const ox = Math.round(size * (0.1 + (amount / 100) * 0.25));
-      const oy = Math.round(size * (0.1 + (amount / 100) * 0.25));
-      const blur = Math.round(size * (0.08 + (amount / 100) * 0.22));
-
-      return [
-        `${ox}px ${oy}px 0 ${solid}`,
-        `${ox}px ${oy}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.95)`,
-        `${Math.round(ox * 1.35)}px ${Math.round(oy * 1.35)}px ${Math.round(blur * 1.5)}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`,
-      ].join(", ");
-    }
-
     function applyTextAppearance(el, style, fontSize) {
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
       const textColor = style.textColor || "#ffffff";
@@ -123,15 +122,8 @@
       el.style.setProperty("-webkit-text-fill-color", textColor, "important");
       el.style.fontWeight = style.bold !== false ? "700" : "400";
       el.style.fontStyle = style.italic ? "italic" : "normal";
+      el.style.textShadow = "none";
       applyOutline(el, outlineColor, outlineWidth);
-      el.style.textShadow = buildDropShadow(
-        style.dropShadowColor || "#000000",
-        style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
-        style.dropShadowEnabled,
-        size
-      );
-      el.style.filter = "none";
-      el.style.webkitFilter = "none";
 
       if (style.borderEnabled) {
         el.style.border = `${borderWidth}px solid ${style.borderColor || "#000000"}`;
@@ -142,8 +134,44 @@
         el.style.border = "none";
         el.style.padding = "0";
         el.style.borderRadius = "0";
-        el.style.display = "block";
       }
+    }
+
+    function applyDropLayer(el, style, fontSize) {
+      const size = Math.max(12, parseInt(fontSize, 10) || 60);
+      const intensity = style.dropShadowIntensity != null ? style.dropShadowIntensity : "50";
+      const { x, y } = dropShadowOffset(size, intensity);
+      el.style.fontSize = size + "px";
+      el.style.fontWeight = style.bold !== false ? "700" : "400";
+      el.style.fontStyle = style.italic ? "italic" : "normal";
+      el.style.color = style.dropShadowColor || "#000000";
+      el.style.setProperty("-webkit-text-fill-color", style.dropShadowColor || "#000000", "important");
+      el.style.webkitTextStroke = "";
+      el.style.paintOrder = "";
+      el.style.transform = `translate(${x}px, ${y}px)`;
+      el.style.opacity = String(0.55 + (Math.min(100, parseInt(intensity, 10) || 0) / 100) * 0.45);
+    }
+
+    function createTextBlock(text, style, fontSize, kind) {
+      const block = document.createElement("span");
+      block.className = "verse-block verse-block-" + kind;
+
+      if (isTruthyFlag(style.dropShadowEnabled)) {
+        const drop = document.createElement("span");
+        drop.className = "verse-drop";
+        drop.setAttribute("aria-hidden", "true");
+        drop.textContent = text;
+        applyDropLayer(drop, style, fontSize);
+        block.appendChild(drop);
+      }
+
+      const main = document.createElement("span");
+      main.className = kind === "ref" ? "verse-reference" : "verse-text";
+      main.textContent = text;
+      applyTextAppearance(main, style, fontSize);
+      block.appendChild(main);
+
+      return block;
     }
 
     function renderOverlay(verse, reference, style) {
@@ -152,28 +180,12 @@
 
       bodyEl.replaceChildren();
 
-      if (!verse) {
-        const placeholder = document.createElement("span");
-        placeholder.className = "verse-text";
-        placeholder.textContent = "Select a verse in the dock";
-        applyTextAppearance(placeholder, style, fontSize);
-        bodyEl.appendChild(placeholder);
-        return;
-      }
+      const message = verse || "Select a verse in the dock";
+      bodyEl.appendChild(createTextBlock(message, style, fontSize, "verse"));
 
-      const textSpan = document.createElement("span");
-      textSpan.className = "verse-text";
-      textSpan.textContent = verse;
-      applyTextAppearance(textSpan, style, fontSize);
-      bodyEl.appendChild(textSpan);
-
-      if (reference) {
-        const refEl = document.createElement("span");
-        refEl.className = "verse-reference";
-        refEl.textContent = reference;
+      if (verse && reference) {
         const refSize = Math.max(10, (parseInt(fontSize, 10) || 60) - 3);
-        applyTextAppearance(refEl, style, refSize);
-        bodyEl.appendChild(refEl);
+        bodyEl.appendChild(createTextBlock(reference, style, refSize, "ref"));
       }
     }
 
@@ -206,14 +218,17 @@
         if (key === lastStateKey) return;
         lastStateKey = key;
 
-        const verse = data.verse || "";
-        const reference = buildReference(data);
-        renderOverlay(verse, reference, data);
+        renderOverlay(data.verse || "", buildReference(data), data);
       } catch (e) {
-        const bodyEl = document.getElementById("verseBody");
-        bodyEl.textContent = "Connecting...";
+        document.getElementById("verseBody").textContent = "Connecting...";
         lastStateKey = "";
       }
+    }
+
+    // ponytail: self-check — fails if offset math breaks (upgrade: run with ?selfcheck=1)
+    if (new URLSearchParams(location.search).get("selfcheck") === "1") {
+      const o = dropShadowOffset(60, 100);
+      console.assert(o.x >= 10 && o.y >= 10, "dropShadowOffset", o);
     }
 
     updateVerse();
