@@ -205,37 +205,6 @@ input {
   border-color: #555;
 }
 
-.style-preview-wrap {
-  margin: 4px 0 10px;
-}
-
-.style-preview {
-  padding: 12px;
-  background: linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%);
-  border: 1px solid #444;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 20px;
-  line-height: 1.45;
-  color: #ffffff;
-  font-weight: 700;
-  word-break: break-word;
-}
-
-.style-preview-hint {
-  margin: 6px 0 0;
-  font-size: 11px;
-  opacity: 0.65;
-  line-height: 1.35;
-}
-
-.style-preview-hint code {
-  font-size: 10px;
-  background: #2a2a2a;
-  padding: 1px 4px;
-  border-radius: 4px;
-}
-
 .style-row {
   display: grid;
   grid-template-columns: 88px 1fr auto;

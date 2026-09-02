@@ -59,22 +59,11 @@
         </div>
 
         <div class="style-row style-row-shadow">
-          <label for="shadowColor">Outline shadow</label>
+          <label for="shadowColor">Shadow color</label>
           <input type="color" id="shadowColor" value="#000000">
           <label for="shadowIntensity" class="sub-label">Intensity</label>
           <input type="range" id="shadowIntensity" min="0" max="100" value="70">
           <span id="shadowIntensityVal" class="style-value">70</span>
-        </div>
-
-        <div class="style-row style-row-border">
-          <label class="toggle-label">
-            <input type="checkbox" id="dropShadowEnabled">
-            Drop shadow
-          </label>
-          <input type="color" id="dropShadowColor" value="#000000" title="Drop shadow color">
-          <label for="dropShadowIntensity" class="sub-label">Depth</label>
-          <input type="range" id="dropShadowIntensity" min="0" max="100" value="50">
-          <span id="dropShadowIntensityVal" class="style-value">50</span>
         </div>
 
         <div class="style-row style-row-border">
@@ -86,11 +75,6 @@
           <label for="borderWidth" class="sub-label">Width</label>
           <input type="range" id="borderWidth" min="1" max="12" value="2">
           <span id="borderWidthVal" class="style-value">2</span>
-        </div>
-
-        <div class="style-preview-wrap">
-          <div id="stylePreview" class="style-preview" aria-live="polite">ದೇವರು ಲೋಕವನ್ನು ಸೃಷ್ಟಿಸಿದನು</div>
-          <p class="style-preview-hint">Preview — same look as your OBS <code>/browser/</code> source</p>
         </div>
 
         <button type="button" class="style-reset-btn" id="resetStyleDefaults">

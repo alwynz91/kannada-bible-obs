@@ -17,9 +17,6 @@ let state = {
   italic: false,
   shadowColor: "#000000",
   shadowIntensity: "70",
-  dropShadowEnabled: false,
-  dropShadowColor: "#000000",
-  dropShadowIntensity: "50",
   borderEnabled: false,
   borderColor: "#000000",
   borderWidth: "2",
@@ -49,9 +46,6 @@ app.post("/api/state", (req, res) => {
   if (b.italic !== undefined) state.italic = Boolean(b.italic);
   if (b.shadowColor !== undefined) state.shadowColor = String(b.shadowColor);
   if (b.shadowIntensity !== undefined) state.shadowIntensity = String(b.shadowIntensity);
-  if (b.dropShadowEnabled !== undefined) state.dropShadowEnabled = Boolean(b.dropShadowEnabled);
-  if (b.dropShadowColor !== undefined) state.dropShadowColor = String(b.dropShadowColor);
-  if (b.dropShadowIntensity !== undefined) state.dropShadowIntensity = String(b.dropShadowIntensity);
   if (b.borderEnabled !== undefined) state.borderEnabled = Boolean(b.borderEnabled);
   if (b.borderColor !== undefined) state.borderColor = String(b.borderColor);
   if (b.borderWidth !== undefined) state.borderWidth = String(b.borderWidth);

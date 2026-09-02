@@ -167,10 +167,6 @@ const textItalicCheckbox = document.getElementById("textItalic");
 const shadowColorInput = document.getElementById("shadowColor");
 const shadowIntensitySlider = document.getElementById("shadowIntensity");
 const shadowIntensityVal = document.getElementById("shadowIntensityVal");
-const dropShadowEnabledCheckbox = document.getElementById("dropShadowEnabled");
-const dropShadowColorInput = document.getElementById("dropShadowColor");
-const dropShadowIntensitySlider = document.getElementById("dropShadowIntensity");
-const dropShadowIntensityVal = document.getElementById("dropShadowIntensityVal");
 const borderEnabledCheckbox = document.getElementById("borderEnabled");
 const borderColorInput = document.getElementById("borderColor");
 const borderWidthSlider = document.getElementById("borderWidth");
@@ -179,7 +175,6 @@ const textStylePanel = document.getElementById("textStylePanel");
 const textStyleToggle = document.getElementById("textStyleToggle");
 const textStyleBody = document.getElementById("textStyleBody");
 const resetStyleDefaultsBtn = document.getElementById("resetStyleDefaults");
-const stylePreview = document.getElementById("stylePreview");
 const searchMirror = document.getElementById("searchMirror");
 const dockToast = document.getElementById("dockToast");
 
@@ -189,9 +184,6 @@ const DEFAULT_DISPLAY_STYLE = {
   italic: false,
   shadowColor: "#000000",
   shadowIntensity: "70",
-  dropShadowEnabled: false,
-  dropShadowColor: "#000000",
-  dropShadowIntensity: "50",
   borderEnabled: false,
   borderColor: "#000000",
   borderWidth: "2",
@@ -207,9 +199,6 @@ function getDisplayStylePayload() {
     italic: textItalicCheckbox.checked,
     shadowColor: shadowColorInput.value,
     shadowIntensity: shadowIntensitySlider.value,
-    dropShadowEnabled: dropShadowEnabledCheckbox.checked,
-    dropShadowColor: dropShadowColorInput.value,
-    dropShadowIntensity: dropShadowIntensitySlider.value,
     borderEnabled: borderEnabledCheckbox.checked,
     borderColor: borderColorInput.value,
     borderWidth: borderWidthSlider.value,
@@ -219,7 +208,6 @@ function getDisplayStylePayload() {
 function syncStyleValueLabels() {
   if (fontSizeVal) fontSizeVal.textContent = fontSizeSlider.value;
   if (shadowIntensityVal) shadowIntensityVal.textContent = shadowIntensitySlider.value;
-  if (dropShadowIntensityVal) dropShadowIntensityVal.textContent = dropShadowIntensitySlider.value;
   if (borderWidthVal) borderWidthVal.textContent = borderWidthSlider.value;
 }
 
@@ -231,79 +219,20 @@ function applyDisplayStyleToControls(data) {
   if (data.italic != null) textItalicCheckbox.checked = Boolean(data.italic);
   if (data.shadowColor) shadowColorInput.value = data.shadowColor;
   if (data.shadowIntensity != null) shadowIntensitySlider.value = data.shadowIntensity;
-  if (data.dropShadowEnabled != null) dropShadowEnabledCheckbox.checked = Boolean(data.dropShadowEnabled);
-  if (data.dropShadowColor) dropShadowColorInput.value = data.dropShadowColor;
-  if (data.dropShadowIntensity != null) dropShadowIntensitySlider.value = data.dropShadowIntensity;
   if (data.borderEnabled != null) borderEnabledCheckbox.checked = Boolean(data.borderEnabled);
   if (data.borderColor) borderColorInput.value = data.borderColor;
   if (data.borderWidth != null) borderWidthSlider.value = data.borderWidth;
   syncStyleValueLabels();
-  updateStylePreview();
 }
 
 function postDisplayStyle() {
   syncStyleValueLabels();
-  updateStylePreview();
   fetch("/api/state", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
     body: JSON.stringify(getDisplayStylePayload()),
   });
-}
-
-function previewOutlineShadow(color, intensity) {
-  const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-  if (amount === 0) return "";
-  const solid = color || "#000000";
-  const offset = Math.max(1, Math.round(1 + (amount / 100) * 3));
-  const blur = Math.round(4 + (amount / 100) * 14);
-  return [
-    `-${offset}px -${offset}px 0 ${solid}`,
-    `${offset}px -${offset}px 0 ${solid}`,
-    `-${offset}px ${offset}px 0 ${solid}`,
-    `${offset}px ${offset}px 0 ${solid}`,
-    `0 0 ${blur}px ${solid}`,
-  ].join(", ");
-}
-
-function previewDropShadow(color, intensity, enabled) {
-  if (!enabled) return "";
-  const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-  if (amount === 0) return "";
-  const solid = color || "#000000";
-  const offset = Math.max(2, Math.round(2 + (amount / 100) * 10));
-  const blur = Math.round(3 + (amount / 100) * 16);
-  return `${offset}px ${offset}px ${blur}px ${solid}`;
-}
-
-function combineShadows(...parts) {
-  const joined = parts.filter(Boolean).join(", ");
-  return joined || "none";
-}
-
-function updateStylePreview() {
-  if (!stylePreview) return;
-  const style = getDisplayStylePayload();
-  const size = Math.max(14, Math.min(28, Math.round(parseInt(style.fontSize, 10) / 3) || 20));
-  stylePreview.style.fontSize = `${size}px`;
-  stylePreview.style.color = style.textColor;
-  stylePreview.style.fontWeight = style.bold ? "700" : "400";
-  stylePreview.style.fontStyle = style.italic ? "italic" : "normal";
-  stylePreview.style.textShadow = combineShadows(
-    previewOutlineShadow(style.shadowColor, style.shadowIntensity),
-    previewDropShadow(style.dropShadowColor, style.dropShadowIntensity, style.dropShadowEnabled)
-  );
-  if (style.borderEnabled) {
-    const w = Math.max(1, parseInt(style.borderWidth, 10) || 2);
-    stylePreview.style.border = `${w}px solid ${style.borderColor}`;
-    stylePreview.style.padding = "8px 12px";
-    stylePreview.style.borderRadius = "6px";
-  } else {
-    stylePreview.style.border = "none";
-    stylePreview.style.padding = "12px";
-    stylePreview.style.borderRadius = "8px";
-  }
 }
 
 async function loadDisplayStyleFromServer() {
@@ -470,9 +399,6 @@ textBoldCheckbox.addEventListener("change", postDisplayStyle);
 textItalicCheckbox.addEventListener("change", postDisplayStyle);
 shadowColorInput.addEventListener("input", postDisplayStyle);
 shadowIntensitySlider.addEventListener("input", postDisplayStyle);
-dropShadowEnabledCheckbox.addEventListener("change", postDisplayStyle);
-dropShadowColorInput.addEventListener("input", postDisplayStyle);
-dropShadowIntensitySlider.addEventListener("input", postDisplayStyle);
 borderEnabledCheckbox.addEventListener("change", postDisplayStyle);
 borderColorInput.addEventListener("input", postDisplayStyle);
 borderWidthSlider.addEventListener("input", postDisplayStyle);
@@ -484,7 +410,7 @@ textStyleToggle.addEventListener("click", () => {
 });
 
 loadTextStylePanelState();
-loadDisplayStyleFromServer().then(() => updateStylePreview());
+loadDisplayStyleFromServer();
 
 function isTypableField(el) {
   if (!el || !el.tagName) return false;
