@@ -80,35 +80,22 @@
       };
     }
 
-    function buildOutlineShadow(color, intensity) {
+    function applyOutline(el, color, intensity) {
       const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      if (amount === 0) return "";
-
-      const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
-      const solid = color || "#000000";
-      const offset = Math.max(1, Math.round(1 + (amount / 100) * 3));
-      const blur = Math.round(4 + (amount / 100) * 14);
-      const glow = 0.35 + (amount / 100) * 0.65;
-      const soft = 0.4 + (amount / 100) * 0.55;
-
-      return [
-        `-${offset}px -${offset}px 0 ${solid}`,
-        `${offset}px -${offset}px 0 ${solid}`,
-        `-${offset}px ${offset}px 0 ${solid}`,
-        `${offset}px ${offset}px 0 ${solid}`,
-        `-${offset}px 0 0 ${solid}`,
-        `${offset}px 0 0 ${solid}`,
-        `0 -${offset}px 0 ${solid}`,
-        `0 ${offset}px 0 ${solid}`,
-        `0 0 ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${glow})`,
-        `${offset}px ${offset}px ${blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${soft})`,
-      ].join(", ");
+      if (amount === 0) {
+        el.style.webkitTextStroke = "";
+        el.style.paintOrder = "";
+        return;
+      }
+      const width = Math.max(1, Math.round(1 + (amount / 100) * 5));
+      el.style.webkitTextStroke = `${width}px ${color || "#000000"}`;
+      el.style.paintOrder = "stroke fill";
     }
 
     function buildDropShadow(color, intensity, enabled, fontSize) {
-      if (!isTruthyFlag(enabled)) return "";
+      if (!isTruthyFlag(enabled)) return "none";
       const amount = Math.max(0, Math.min(100, parseInt(intensity, 10) || 0));
-      if (amount === 0) return "";
+      if (amount === 0) return "none";
 
       const rgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
       const solid = color || "#000000";
@@ -124,16 +111,11 @@
       ].join(", ");
     }
 
-    function combineShadows(...layers) {
-      const parts = layers.filter((s) => s && s !== "none");
-      return parts.length ? parts.join(", ") : "none";
-    }
-
     function applyTextAppearance(el, style, fontSize) {
       const size = Math.max(12, parseInt(fontSize, 10) || 60);
       const textColor = style.textColor || "#ffffff";
-      const shadowColor = style.shadowColor || "#000000";
-      const shadowIntensity = style.shadowIntensity != null ? style.shadowIntensity : "70";
+      const outlineColor = style.shadowColor || "#000000";
+      const outlineWidth = style.shadowIntensity != null ? style.shadowIntensity : "70";
       const borderWidth = Math.max(1, parseInt(style.borderWidth, 10) || 2);
 
       el.style.fontSize = size + "px";
@@ -141,19 +123,15 @@
       el.style.setProperty("-webkit-text-fill-color", textColor, "important");
       el.style.fontWeight = style.bold !== false ? "700" : "400";
       el.style.fontStyle = style.italic ? "italic" : "normal";
-      el.style.textShadow = combineShadows(
-        buildOutlineShadow(shadowColor, shadowIntensity),
-        buildDropShadow(
-          style.dropShadowColor || "#000000",
-          style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
-          style.dropShadowEnabled,
-          size
-        )
+      applyOutline(el, outlineColor, outlineWidth);
+      el.style.textShadow = buildDropShadow(
+        style.dropShadowColor || "#000000",
+        style.dropShadowIntensity != null ? style.dropShadowIntensity : "50",
+        style.dropShadowEnabled,
+        size
       );
       el.style.filter = "none";
       el.style.webkitFilter = "none";
-      el.style.webkitTextStroke = "initial";
-      el.style.paintOrder = "initial";
 
       if (style.borderEnabled) {
         el.style.border = `${borderWidth}px solid ${style.borderColor || "#000000"}`;
