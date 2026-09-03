@@ -37,13 +37,30 @@
       overflow: visible;
     }
 
-    .verse-text,
-    .verse-reference {
+    .verse-block {
+      position: relative;
       display: block;
     }
 
-    .verse-reference {
+    .verse-block-ref {
       margin-top: 0.5em;
+    }
+
+    .verse-text,
+    .verse-reference {
+      position: relative;
+      z-index: 1;
+      display: block;
+    }
+
+    .verse-ghost {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.18;
     }
   </style>
 </head>
@@ -141,25 +158,44 @@
       }
     }
 
+    function createTextBlock(text, style, fontSize, kind) {
+      const block = document.createElement("span");
+      block.className = "verse-block verse-block-" + kind;
+
+      if (isTruthyFlag(style.dropShadowEnabled)) {
+        const size = Math.max(12, parseInt(fontSize, 10) || 60);
+        const amount = Math.max(0, Math.min(100, parseInt(style.dropShadowIntensity, 10) || 0));
+        const offset = Math.round(size * (0.04 + (amount / 100) * 0.08));
+        const ghost = document.createElement("span");
+        ghost.className = "verse-ghost";
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.textContent = text;
+        ghost.style.fontSize = size + "px";
+        ghost.style.fontWeight = style.bold !== false ? "700" : "400";
+        ghost.style.fontStyle = style.italic ? "italic" : "normal";
+        ghost.style.color = style.dropShadowColor || "#000000";
+        ghost.style.transform = `translate(${offset}px, ${offset}px)`;
+        block.appendChild(ghost);
+      }
+
+      const main = document.createElement("span");
+      main.className = kind === "ref" ? "verse-reference" : "verse-text";
+      main.textContent = text;
+      applyTextAppearance(main, style, fontSize);
+      block.appendChild(main);
+      return block;
+    }
+
     function renderOverlay(verse, reference, style) {
       const bodyEl = document.getElementById("verseBody");
       const fontSize = style.fontSize || "60";
 
       bodyEl.replaceChildren();
-
-      const textSpan = document.createElement("span");
-      textSpan.className = "verse-text";
-      textSpan.textContent = verse || "Select a verse in the dock";
-      applyTextAppearance(textSpan, style, fontSize);
-      bodyEl.appendChild(textSpan);
+      bodyEl.appendChild(createTextBlock(verse || "Select a verse in the dock", style, fontSize, "verse"));
 
       if (verse && reference) {
-        const refEl = document.createElement("span");
-        refEl.className = "verse-reference";
-        refEl.textContent = reference;
         const refSize = Math.max(10, (parseInt(fontSize, 10) || 60) - 3);
-        applyTextAppearance(refEl, style, refSize);
-        bodyEl.appendChild(refEl);
+        bodyEl.appendChild(createTextBlock(reference, style, refSize, "ref"));
       }
     }
 
